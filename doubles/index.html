@@ -1,0 +1,522 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Doubles">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="manifest" href="manifest.webmanifest">
+<!-- ARTIFACT-START -->
+<title>Doubles</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;600;700&family=Chivo+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: one-screen app. Header with name and score chips, then a square
+   glazed-tile board that fills the width, controls underneath. */
+:root {
+  --bg: #eef1f0;
+  --fg: #1d2a28;
+  --muted: #5d6e6a;
+  --board: #c3cccb;
+  --cell: #d7dedc;
+  --chip: #dfe5e3;
+  --accent: #2f4e9a;
+  --accent-fg: #f4f6fc;
+  --scrim: rgba(238, 241, 240, .86);
+
+  /* Tile glazes: celadon through cobalt to oxblood and gold. Each tile
+     carries its own background and text, so the set reads in both themes. */
+  --g2: #e8ece6;   --g2-fg: #2b3a36;
+  --g4: #d3e2d6;   --g4-fg: #24372f;
+  --g8: #a9cdb8;   --g8-fg: #183126;
+  --g16: #6fb09a;  --g16-fg: #0e241c;
+  --g32: #3e8c84;  --g32-fg: #f2f7f4;
+  --g64: #2d6e8c;  --g64-fg: #f2f7f4;
+  --g128: #2f4e9a; --g128-fg: #f4f6fc;
+  --g256: #4b3a93; --g256-fg: #f5f3fc;
+  --g512: #7a2f7e; --g512-fg: #fcf2fa;
+  --g1024: #9b2d3f; --g1024-fg: #fcf2f3;
+  --g2048: #c9892b; --g2048-fg: #1e1405;
+  --gmax: #1e1a17; --gmax-fg: #f0d9a8;
+
+  --display: "Familjen Grotesk", "Avenir Next", "Helvetica Neue", Arial, sans-serif;
+  --mono: "Chivo Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --gap: 2.6cqw;
+  --slide: 110ms;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121817; --fg: #e4ecea; --muted: #8fa19c; --board: #24302e;
+    --cell: #1b2523; --chip: #1d2725; --accent: #8fa8f0; --accent-fg: #0f1630;
+    --scrim: rgba(18, 24, 23, .86); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121817; --fg: #e4ecea; --muted: #8fa19c; --board: #24302e;
+  --cell: #1b2523; --chip: #1d2725; --accent: #8fa8f0; --accent-fg: #0f1630;
+  --scrim: rgba(18, 24, 23, .86); color-scheme: dark;
+}
+
+html, body { height: 100%; }
+[hidden] { display: none !important; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--display);
+  font-size: 15px;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.app {
+  box-sizing: border-box;
+  min-height: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+  padding-block: 20px 24px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+header { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+h1 {
+  margin: 0;
+  font-size: 2.6rem;
+  line-height: .9;
+  font-weight: 700;
+  letter-spacing: -.03em;
+}
+h1 span { color: var(--accent); }
+.scores { display: flex; gap: 8px; }
+.chip {
+  min-width: 72px;
+  padding: 6px 12px 7px;
+  border-radius: 8px;
+  background: var(--chip);
+  text-align: right;
+}
+.chip b {
+  display: block;
+  font-size: .68rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600;
+}
+.chip output {
+  display: block;
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 1.25rem;
+  font-variant-numeric: tabular-nums;
+}
+.bump { animation: bump 200ms ease-out; }
+@keyframes bump { 40% { transform: translateY(-3px); color: var(--accent); } }
+
+.bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.hint { margin: 0; color: var(--muted); line-height: 1.35; min-width: 0; }
+.hint strong { color: var(--fg); font-weight: 600; }
+.actions { display: flex; gap: 8px; flex-shrink: 0; }
+button {
+  font: inherit;
+  font-weight: 600;
+  border: 0;
+  border-radius: 8px;
+  padding: 10px 14px;
+  cursor: pointer;
+  background: var(--chip);
+  color: var(--fg);
+}
+button.primary { background: var(--accent); color: var(--accent-fg); }
+button:disabled { opacity: .4; cursor: default; }
+button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+button:active:not(:disabled) { transform: translateY(1px); }
+
+.board {
+  container-type: inline-size;
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  aspect-ratio: 1;
+  border-radius: 12px;
+  background: var(--board);
+  touch-action: none;
+}
+.grid, .tiles { position: absolute; inset: var(--gap); }
+.grid {
+  display: grid;
+  grid-template: repeat(4, 1fr) / repeat(4, 1fr);
+  gap: var(--gap);
+}
+.grid div { background: var(--cell); border-radius: 6px; }
+.tile {
+  position: absolute;
+  top: 0; left: 0;
+  width: calc((100% - 3 * var(--gap)) / 4);
+  height: calc((100% - 3 * var(--gap)) / 4);
+  transform: translate(calc(var(--c) * (100% + var(--gap))), calc(var(--r) * (100% + var(--gap))));
+  transition: transform var(--slide) ease-in-out;
+}
+.tile.dying { z-index: 0; }
+.face {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 10cqw;
+  letter-spacing: -.04em;
+  font-variant-numeric: tabular-nums;
+  box-shadow: inset 0 -0.8cqw 0 rgba(0, 0, 0, .14), inset 0 0.5cqw 0 rgba(255, 255, 255, .22);
+  background: var(--bgc);
+  color: var(--fgc);
+}
+.face.d3 { font-size: 8.4cqw; }
+.face.d4 { font-size: 6.8cqw; }
+.face.d5 { font-size: 5.4cqw; }
+.new .face { animation: appear 160ms ease-out both; animation-delay: var(--slide); }
+.pop .face { animation: pop 180ms ease-out; }
+@keyframes appear { from { transform: scale(.2); opacity: 0; } }
+@keyframes pop { 45% { transform: scale(1.14); } }
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  border-radius: 12px;
+  background: var(--scrim);
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 14px;
+  text-align: center;
+  padding: 16px;
+  animation: fade 300ms ease-out both;
+}
+.overlay h2 { margin: 0; font-size: 2rem; letter-spacing: -.02em; text-wrap: balance; }
+.overlay p { margin: 0; color: var(--muted); }
+.overlay .actions { justify-content: center; }
+@keyframes fade { from { opacity: 0; } }
+
+footer { color: var(--muted); font-size: .85rem; line-height: 1.4; }
+footer kbd {
+  font-family: var(--mono);
+  font-size: .8rem;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--chip);
+}
+@media (prefers-reduced-motion: reduce) {
+  :root { --slide: 0ms; }
+  .new .face, .pop .face, .bump, .overlay { animation: none; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>Doubles<span>.</span></h1>
+    <div class="scores">
+      <div class="chip"><b>Score</b><output id="score">0</output></div>
+      <div class="chip"><b>Best</b><output id="best">0</output></div>
+    </div>
+  </header>
+
+  <div class="bar">
+    <p class="hint">Swipe to slide every tile. Two of a kind merge. Reach <strong>2048</strong>.</p>
+    <div class="actions">
+      <button id="undo" type="button" disabled>Undo</button>
+      <button id="new" type="button" class="primary">New</button>
+    </div>
+  </div>
+
+  <div class="board" id="board" aria-label="Game board" role="application">
+    <div class="grid" aria-hidden="true"></div>
+    <div class="tiles" id="tiles"></div>
+    <div class="overlay" id="overlay" hidden>
+      <h2 id="ov-title"></h2>
+      <p id="ov-text"></p>
+      <div class="actions">
+        <button id="ov-secondary" type="button"></button>
+        <button id="ov-primary" type="button" class="primary"></button>
+      </div>
+    </div>
+  </div>
+
+  <footer>On a keyboard, use the arrow keys or <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>. Undo takes back one move.</footer>
+</div>
+
+<script>
+(() => {
+  const N = 4;
+  const SLIDE_MS = matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 110;
+  const STORE = "doubles-v1";
+  const $ = (id) => document.getElementById(id);
+  const tilesEl = $("tiles");
+
+  let state;        // { tiles: [{id, v, r, c}], score, best, nextId, won, keepGoing }
+  let prev = null;  // state before the last move, for undo
+  const els = new Map();
+  let pending = null; // finishing step of an in-flight slide
+
+  const gridEl = document.querySelector(".grid");
+  for (let i = 0; i < N * N; i++) gridEl.appendChild(document.createElement("div"));
+
+  const clone = (s) => JSON.parse(JSON.stringify(s));
+  const load = () => { try { return JSON.parse(localStorage.getItem(STORE)); } catch { return null; } };
+  const save = () => { try { localStorage.setItem(STORE, JSON.stringify({ state, prev })); } catch {} };
+
+  function fresh(best = 0) {
+    state = { tiles: [], score: 0, best, nextId: 1, won: false, keepGoing: false };
+    prev = null;
+    spawn(); spawn();
+  }
+
+  function spawn() {
+    const taken = new Set(state.tiles.map((t) => t.r * N + t.c));
+    const free = [];
+    for (let i = 0; i < N * N; i++) if (!taken.has(i)) free.push(i);
+    if (!free.length) return null;
+    const i = free[Math.floor(Math.random() * free.length)];
+    const t = { id: state.nextId++, v: Math.random() < 0.9 ? 2 : 4, r: Math.floor(i / N), c: i % N };
+    state.tiles.push(t);
+    return t;
+  }
+
+  // Cell (r, c) of index j along line i, where j = 0 is the edge tiles slide toward.
+  const at = {
+    left:  (i, j) => [i, j],
+    right: (i, j) => [i, N - 1 - j],
+    up:    (i, j) => [j, i],
+    down:  (i, j) => [N - 1 - j, i],
+  };
+
+  function canMove() {
+    if (state.tiles.length < N * N) return true;
+    const g = grid();
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+      const v = g[r][c].v;
+      if ((c + 1 < N && g[r][c + 1].v === v) || (r + 1 < N && g[r + 1][c].v === v)) return true;
+    }
+    return false;
+  }
+
+  function grid() {
+    const g = Array.from({ length: N }, () => Array(N).fill(null));
+    for (const t of state.tiles) g[t.r][t.c] = t;
+    return g;
+  }
+
+  function move(dir) {
+    if (pending) pending();
+    if (!$("overlay").hidden) return;
+    const before = clone(state);
+    const g = grid();
+    const dying = [], merged = [];
+    let moved = false, gained = 0;
+
+    for (let i = 0; i < N; i++) {
+      const line = [];
+      for (let j = 0; j < N; j++) {
+        const [r, c] = at[dir](i, j);
+        if (g[r][c]) line.push(g[r][c]);
+      }
+      const out = [];
+      for (const t of line) {
+        const last = out[out.length - 1];
+        if (last && !last.merged && last.t.v === t.v) {
+          last.merged = true;
+          last.t.v *= 2;
+          gained += last.t.v;
+          dying.push({ t, into: last.t });
+          merged.push(last.t);
+        } else {
+          out.push({ t, merged: false });
+        }
+      }
+      out.forEach(({ t }, k) => {
+        const [r, c] = at[dir](i, k);
+        if (t.r !== r || t.c !== c) moved = true;
+        t.r = r; t.c = c;
+      });
+    }
+    for (const d of dying) { d.t.r = d.into.r; d.t.c = d.into.c; moved = true; }
+    if (!moved) return;
+
+    prev = before;
+    state.tiles = state.tiles.filter((t) => !dying.some((d) => d.t === t));
+    state.score += gained;
+    if (state.score > state.best) state.best = state.score;
+    const born = spawn();
+
+    // Phase 1: slide everything, merged-away tiles included, showing old values.
+    for (const d of dying) place(els.get(d.t.id), d.t);
+    for (const t of state.tiles) if (els.has(t.id)) place(els.get(t.id), t);
+
+    const finish = () => {
+      clearTimeout(timer);
+      pending = null;
+      for (const d of dying) { els.get(d.t.id)?.remove(); els.delete(d.t.id); }
+      for (const t of merged) {
+        const el = els.get(t.id);
+        paint(el, t.v);
+        el.classList.remove("pop"); void el.offsetWidth; el.classList.add("pop");
+      }
+      if (born) make(born, true);
+      render();
+      if (gained) bump();
+      checkEnd();
+    };
+    pending = finish;
+    const timer = setTimeout(finish, SLIDE_MS);
+    save();
+  }
+
+  function make(t, isNew) {
+    const el = document.createElement("div");
+    el.className = "tile" + (isNew ? " new" : "");
+    el.innerHTML = '<div class="face"></div>';
+    place(el, t);
+    paint(el, t.v);
+    tilesEl.appendChild(el);
+    els.set(t.id, el);
+    return el;
+  }
+  function place(el, t) {
+    el.style.setProperty("--r", t.r);
+    el.style.setProperty("--c", t.c);
+  }
+  function paint(el, v) {
+    const face = el.firstChild;
+    const key = v > 2048 ? "max" : v;
+    face.textContent = v;
+    face.className = "face d" + Math.max(2, String(v).length);
+    face.style.setProperty("--bgc", `var(--g${key})`);
+    face.style.setProperty("--fgc", `var(--g${key}-fg)`);
+    el.setAttribute("aria-label", String(v));
+  }
+
+  function renderAll() {
+    tilesEl.textContent = "";
+    els.clear();
+    for (const t of state.tiles) make(t, false);
+    render();
+  }
+
+  function render() {
+    $("score").textContent = state.score;
+    $("best").textContent = state.best;
+    $("undo").disabled = !prev;
+  }
+
+  function bump() {
+    const s = $("score");
+    s.classList.remove("bump"); void s.offsetWidth; s.classList.add("bump");
+  }
+
+  function checkEnd() {
+    if (!state.won && state.tiles.some((t) => t.v >= 2048)) {
+      state.won = true;
+      save();
+      return showOverlay("You made 2048", `Score ${state.score}. Keep merging for a bigger tile, or start over.`,
+        "New game", newGame, "Keep going", hideOverlay);
+    }
+    if (!canMove()) {
+      showOverlay("No moves left", `Final score ${state.score}.`, "Undo", undo, "Try again", newGame);
+    }
+  }
+
+  function showOverlay(title, text, secondary, onSecondary, primary, onPrimary) {
+    $("ov-title").textContent = title;
+    $("ov-text").textContent = text;
+    $("ov-secondary").textContent = secondary;
+    $("ov-primary").textContent = primary;
+    $("ov-secondary").onclick = onSecondary;
+    $("ov-primary").onclick = onPrimary;
+    $("overlay").hidden = false;
+    $("ov-primary").focus({ preventScroll: true });
+  }
+  function hideOverlay() { $("overlay").hidden = true; }
+
+  function newGame() {
+    if (pending) pending();
+    hideOverlay();
+    fresh(state.best);
+    renderAll();
+    save();
+  }
+
+  function undo() {
+    if (!prev) return;
+    if (pending) pending();
+    const best = state.best;
+    state = prev;
+    state.best = best;
+    prev = null;
+    hideOverlay();
+    renderAll();
+    save();
+  }
+
+  $("new").addEventListener("click", newGame);
+  $("undo").addEventListener("click", undo);
+
+  const keys = {
+    ArrowLeft: "left", ArrowRight: "right", ArrowUp: "up", ArrowDown: "down",
+    a: "left", d: "right", w: "up", s: "down",
+  };
+  document.addEventListener("keydown", (e) => {
+    const dir = keys[e.key.length === 1 ? e.key.toLowerCase() : e.key];
+    if (!dir || e.metaKey || e.ctrlKey || e.altKey) return;
+    e.preventDefault();
+    move(dir);
+  });
+
+  // Swipes: touch or mouse drag anywhere on the board.
+  const board = $("board");
+  let start = null;
+  board.addEventListener("pointerdown", (e) => {
+    if (e.target.closest("button")) return;
+    start = { x: e.clientX, y: e.clientY };
+  });
+  const endSwipe = (e) => {
+    if (!start) return;
+    const dx = e.clientX - start.x, dy = e.clientY - start.y;
+    start = null;
+    if (Math.max(Math.abs(dx), Math.abs(dy)) < 24) return;
+    move(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "right" : "left") : (dy > 0 ? "down" : "up"));
+  };
+  board.addEventListener("pointerup", endSwipe);
+  board.addEventListener("pointercancel", () => { start = null; });
+  // Keep iOS from scrolling or bouncing the page while swiping on the board.
+  board.addEventListener("touchmove", (e) => e.preventDefault(), { passive: false });
+
+  function boot(data) {
+    const saved = data && data.state ? data : load();
+    if (saved && saved.state && Array.isArray(saved.state.tiles) && saved.state.tiles.length) {
+      state = saved.state;
+      prev = saved.prev || null;
+    } else {
+      fresh(saved?.state?.best || 0);
+    }
+    renderAll();
+    if (!canMove()) checkEnd();
+  }
+
+  window.claude?.hot?.snapshot?.(() => ({ state, prev }));
+  window.claude?.hot?.ready ? window.claude.hot.ready(boot) : boot(window.claude?.hot?.data ?? {});
+})();
+</script>
+<!-- ARTIFACT-END -->
+</body>
+</html>
