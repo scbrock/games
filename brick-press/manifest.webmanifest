@@ -1,0 +1,10 @@
+{
+  "name": "Brick Press",
+  "short_name": "Brick Press",
+  "start_url": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#e7eaee",
+  "theme_color": "#e7eaee",
+  "icons": [{ "src": "icon-180.png", "sizes": "180x180", "type": "image/png" }]
+}
