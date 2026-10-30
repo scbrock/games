@@ -22,8 +22,8 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Symbols+2&text=%E2%99%9A%E2%99%9B%E2%99%9C%E2%99%9D%E2%99%9E%E2%99%9F&display=block">
 <script src="https://cdn.jsdelivr.net/npm/chess.js@0.10.3/chess.js"></script>
 <style>
-/* Layout: a single training column. Prompt, board, then a feedback card with
-   the actions; tabs switch between training, the pattern library and stats. */
+/* Layout: one training column. Prompt, board, coach checklist, feedback card.
+   Tabs switch between training, the ideas library and progress/settings. */
 :root {
   --bg: #eef1f4;
   --surface: #ffffff;
@@ -31,9 +31,11 @@
   --muted: #5c6a7c;
   --line: #d9e0e8;
   --accent: #1f6f5c;
+  --accent-soft: #e0efe9;
   --accent-fg: #ffffff;
   --good: #2b8a4b;
   --bad: #c2413b;
+  --coach: #2f6fd6;
   --sq-light: #dce3eb;
   --sq-dark: #7891ab;
   --hl: rgba(242, 193, 78, .62);
@@ -49,13 +51,13 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #0f141b; --surface: #171e28; --fg: #e6ebf2; --muted: #93a1b3; --line: #263140;
-    --accent: #5cc4a6; --accent-fg: #0b1f19; --good: #5fd38a; --bad: #ff7a70;
+    --accent: #5cc4a6; --accent-soft: #173229; --accent-fg: #0b1f19; --good: #5fd38a; --bad: #ff7a70; --coach: #79a8ff;
     --sq-light: #b4c0ce; --sq-dark: #587089; color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --bg: #0f141b; --surface: #171e28; --fg: #e6ebf2; --muted: #93a1b3; --line: #263140;
-  --accent: #5cc4a6; --accent-fg: #0b1f19; --good: #5fd38a; --bad: #ff7a70;
+  --accent: #5cc4a6; --accent-soft: #173229; --accent-fg: #0b1f19; --good: #5fd38a; --bad: #ff7a70; --coach: #79a8ff;
   --sq-light: #b4c0ce; --sq-dark: #587089; color-scheme: dark;
 }
 [hidden] { display: none !important; }
@@ -79,85 +81,34 @@ body {
   flex-direction: column;
   gap: 14px;
 }
+.stack { display: grid; gap: 12px; }
 header { display: flex; align-items: center; gap: 12px; }
-header h1 {
-  margin: 0 auto 0 0;
-  font-family: var(--display);
-  font-weight: 800;
-  font-size: 1.35rem;
-  letter-spacing: -.02em;
-}
+header h1 { margin: 0 auto 0 0; font-family: var(--display); font-weight: 800; font-size: 1.35rem; letter-spacing: -.02em; }
 header h1 span { color: var(--accent); }
-.chip {
-  display: grid;
-  justify-items: end;
-  line-height: 1.1;
-}
+.chip { display: grid; justify-items: end; line-height: 1.1; }
 .chip b { font-size: .66rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
 .chip output { font-family: var(--display); font-weight: 700; font-size: 1.15rem; font-variant-numeric: tabular-nums; }
-.delta { font-size: .78rem; font-weight: 600; margin-left: 4px; }
+.delta { font-size: .8rem; font-weight: 600; margin-left: 4px; }
 .delta.up { color: var(--good); }
 .delta.down { color: var(--bad); }
-.icon-btn {
-  width: 36px; height: 36px;
-  display: grid; place-items: center;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--surface);
-  color: var(--fg);
-  cursor: pointer;
-}
+.icon-btn { width: 36px; height: 36px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--fg); cursor: pointer; }
 .icon-btn svg { width: 18px; height: 18px; fill: currentColor; }
 
-.tabs {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 4px;
-  padding: 4px;
-  border-radius: 12px;
-  background: var(--surface);
-  border: 1px solid var(--line);
-}
-.tabs button {
-  font: inherit;
-  font-weight: 600;
-  font-size: .9rem;
-  padding: 8px 0;
-  border: 0;
-  border-radius: 9px;
-  background: transparent;
-  color: var(--muted);
-  cursor: pointer;
-}
+.tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 4px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); }
+.tabs button { font: inherit; font-weight: 600; font-size: .9rem; padding: 8px 0; border: 0; border-radius: 9px; background: transparent; color: var(--muted); cursor: pointer; }
 .tabs button[aria-selected="true"] { background: var(--accent); color: var(--accent-fg); }
-button:focus-visible, .sq:focus-visible { outline: 3px solid var(--hint); outline-offset: 2px; }
+button:focus-visible, input:focus-visible, summary:focus-visible { outline: 3px solid var(--hint); outline-offset: 2px; }
 
 /* ----- Prompt and board ----- */
+.focus-bar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 10px; background: var(--accent-soft); font-size: .9rem; }
+.focus-bar b { font-weight: 600; }
+.focus-bar button { margin-left: auto; font: inherit; font-size: .85rem; font-weight: 600; border: 0; background: none; color: var(--accent); cursor: pointer; padding: 2px 4px; }
 .prompt { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.turn {
-  width: 18px; height: 18px; border-radius: 50%;
-  border: 2px solid var(--piece-edge);
-  flex-shrink: 0;
-}
+.turn { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--piece-edge); flex-shrink: 0; }
 .turn.w { background: var(--piece-white); }
 .turn.b { background: var(--piece-black); border-color: var(--muted); }
-.prompt h2 {
-  margin: 0;
-  font-family: var(--display);
-  font-weight: 700;
-  font-size: 1.2rem;
-  letter-spacing: -.01em;
-}
-.badge {
-  font-size: .75rem;
-  font-weight: 600;
-  padding: 3px 9px;
-  border-radius: 999px;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  color: var(--muted);
-  font-variant-numeric: tabular-nums;
-}
+.prompt h2 { margin: 0; font-family: var(--display); font-weight: 700; font-size: 1.2rem; letter-spacing: -.01em; }
+.badge { font-size: .75rem; font-weight: 600; padding: 3px 9px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); color: var(--muted); font-variant-numeric: tabular-nums; }
 .badge.mate { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
 .prompt .badge:last-child { margin-left: auto; }
 
@@ -180,20 +131,16 @@ button:focus-visible, .sq:focus-visible { outline: 3px solid var(--hint); outlin
 .sq { position: relative; display: grid; place-items: center; cursor: pointer; min-width: 0; min-height: 0; overflow: hidden; }
 .sq.l { background: var(--sq-light); }
 .sq.d { background: var(--sq-dark); }
-.sq.last::before, .sq.sel::before {
-  content: ""; position: absolute; inset: 0; background: var(--hl);
-}
+.sq.last::before, .sq.sel::before { content: ""; position: absolute; inset: 0; background: var(--hl); }
 .sq.sel::before { background: rgba(242, 193, 78, .85); }
-.sq.check::before {
-  content: ""; position: absolute; inset: 0;
-  background: radial-gradient(circle, rgba(226, 64, 52, .9) 0%, rgba(226, 64, 52, .45) 45%, transparent 72%);
-}
-.sq.hint::after {
-  content: ""; position: absolute; inset: 3px; border-radius: 4px;
-  box-shadow: inset 0 0 0 4px var(--hint);
-  animation: pulse 1.1s ease-in-out infinite;
-}
+.sq.check::before { content: ""; position: absolute; inset: 0; background: radial-gradient(circle, rgba(226, 64, 52, .9) 0%, rgba(226, 64, 52, .45) 45%, transparent 72%); }
+.sq.hint::after { content: ""; position: absolute; inset: 3px; border-radius: 4px; box-shadow: inset 0 0 0 4px var(--hint); animation: pulse 1.1s ease-in-out infinite; }
 .sq.wrong::before { content: ""; position: absolute; inset: 0; background: rgba(226, 64, 52, .55); }
+.sq.mk::after { content: ""; position: absolute; inset: 2px; border-radius: 50%; box-shadow: inset 0 0 0 3.5px var(--mk, var(--coach)); z-index: 4; pointer-events: none; }
+.sq.mk-free { --mk: #e0453a; }
+.sq.mk-from { --mk: var(--coach); }
+.sq.mk-to { --mk: var(--coach); }
+.sq.mk-to::after { border-radius: 4px; box-shadow: inset 0 0 0 3.5px var(--mk); }
 @keyframes pulse { 50% { opacity: .35; } }
 .dot { position: absolute; width: 30%; height: 30%; border-radius: 50%; background: rgba(23, 32, 48, .28); z-index: 2; pointer-events: none; }
 .ring { position: absolute; inset: 4%; border-radius: 50%; box-shadow: inset 0 0 0 5px rgba(23, 32, 48, .28); z-index: 2; pointer-events: none; }
@@ -202,111 +149,92 @@ button:focus-visible, .sq:focus-visible { outline: 3px solid var(--hint); outlin
 .coord.r { left: 4%; top: 4%; }
 .sq.l .coord { color: var(--sq-dark); }
 .sq.d .coord { color: var(--sq-light); }
-.pc {
-  position: relative;
-  z-index: 3;
-  font-family: var(--glyph);
-  font-size: 10.4cqw;
-  line-height: 1;
-  pointer-events: none;
-  transition: transform 180ms ease-out;
-}
+.pc { position: relative; z-index: 3; font-family: var(--glyph); font-size: 10.4cqw; line-height: 1; pointer-events: none; transition: transform 200ms ease-out; }
 .pc.w { color: var(--piece-white); -webkit-text-stroke: .32cqw var(--piece-edge); paint-order: stroke fill; text-shadow: 0 .25cqw 0 rgba(0, 0, 0, .25); }
 .pc.b { color: var(--piece-black); -webkit-text-stroke: .18cqw rgba(255, 255, 255, .35); paint-order: stroke fill; text-shadow: 0 .25cqw 0 rgba(0, 0, 0, .2); }
 .pc.lift { opacity: .25; }
-.ghost {
-  position: fixed;
-  z-index: 50;
-  pointer-events: none;
-  transform: translate(-50%, -58%) scale(1.15);
-  font-family: var(--glyph);
-  line-height: 1;
-}
-.promo {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  background: rgba(15, 20, 27, .55);
-  border-radius: 8px;
-  z-index: 10;
-}
+.ghost { position: fixed; z-index: 50; pointer-events: none; transform: translate(-50%, -58%) scale(1.15); font-family: var(--glyph); line-height: 1; }
+.promo { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(15, 20, 27, .55); border-radius: 8px; z-index: 10; }
 .promo div { display: flex; gap: 8px; padding: 10px; background: var(--surface); border-radius: 12px; }
-.promo button {
-  width: 56px; height: 56px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--sq-light);
-  font-family: var(--glyph);
-  font-size: 40px;
-  line-height: 1;
-  cursor: pointer;
-  container-type: inline-size;
-}
+.promo button { width: 56px; height: 56px; border: 1px solid var(--line); border-radius: 10px; background: var(--sq-light); font-family: var(--glyph); font-size: 40px; line-height: 1; cursor: pointer; }
 
-/* ----- Feedback ----- */
-.card {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 14px 16px;
-  display: grid;
-  gap: 12px;
-}
+.confirm { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 10px 12px; border-radius: 12px; border: 2px solid var(--coach); background: var(--surface); }
+.confirm p { margin: 0; flex: 1 1 200px; font-size: .92rem; }
+.confirm p b { font-weight: 600; }
+
+/* ----- Cards, coach, feedback ----- */
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; display: grid; gap: 12px; }
 .status { display: flex; gap: 10px; align-items: flex-start; }
-.status .mark {
-  flex-shrink: 0;
-  width: 28px; height: 28px;
-  border-radius: 50%;
-  display: grid; place-items: center;
-  font-weight: 800;
-  color: #fff;
-  background: var(--muted);
-}
+.status .mark { flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; color: #fff; background: var(--muted); }
 .status.good .mark { background: var(--good); }
 .status.bad .mark { background: var(--bad); }
 .status p { margin: 0; min-width: 0; }
 .status strong { font-family: var(--display); font-weight: 700; display: block; font-size: 1.02rem; }
 .status .idea { color: var(--muted); font-size: .94rem; }
+.status .idea b { color: var(--fg); font-weight: 600; }
+.lesson { border-top: 1px solid var(--line); padding-top: 10px; font-size: .92rem; display: grid; gap: 4px; }
+.lesson b { font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); }
+.lesson button { justify-self: start; font: inherit; font-size: .88rem; font-weight: 600; color: var(--accent); background: none; border: 0; padding: 0; cursor: pointer; }
 .moves { font-variant-numeric: tabular-nums; font-size: .9rem; color: var(--muted); }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; }
-.btn {
-  font: inherit;
-  font-weight: 600;
-  font-size: .93rem;
-  padding: 10px 14px;
-  border-radius: 10px;
-  border: 1px solid var(--line);
-  background: var(--bg);
-  color: var(--fg);
-  cursor: pointer;
-}
-.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); margin-left: auto; }
+.btn { font: inherit; font-weight: 600; font-size: .93rem; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); cursor: pointer; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+.actions .btn.primary { margin-left: auto; }
+.btn.coachy { border-color: var(--coach); color: var(--coach); background: var(--surface); }
+.btn.small { padding: 6px 10px; font-size: .84rem; }
 .btn:disabled { opacity: .45; cursor: default; }
 
-/* ----- Patterns ----- */
-.intro { margin: 0; color: var(--muted); max-width: 60ch; }
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
-.pat {
-  font: inherit;
-  text-align: left;
-  padding: 10px;
-  border-radius: 12px;
-  border: 1px solid var(--line);
-  background: var(--surface);
-  color: var(--fg);
-  cursor: pointer;
-  display: grid;
-  gap: 8px;
-  min-width: 0;
+details.coach { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
+details.coach > summary { list-style: none; cursor: pointer; padding: 12px 16px; display: flex; align-items: center; gap: 10px; font-weight: 600; }
+details.coach > summary::-webkit-details-marker { display: none; }
+details.coach > summary::after { content: "+"; margin-left: auto; font-size: 1.2rem; color: var(--muted); }
+details.coach[open] > summary::after { content: "–"; }
+summary .sub { font-weight: 400; font-size: .85rem; color: var(--muted); }
+.steps { list-style: none; margin: 0; padding: 0 16px 14px; display: grid; gap: 8px; counter-reset: step; }
+.step { display: grid; grid-template-columns: 26px 1fr auto; gap: 10px; align-items: center; }
+.step::before {
+  counter-increment: step; content: counter(step);
+  width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center;
+  font-size: .8rem; font-weight: 700; background: var(--bg); color: var(--muted);
 }
+.step.done::before { content: "✓"; background: var(--coach); color: #fff; }
+.step div { min-width: 0; font-size: .92rem; line-height: 1.3; }
+.step div small { display: block; color: var(--muted); font-size: .8rem; }
+.coach-out { margin: 0 16px 14px; padding: 10px 12px; border-radius: 10px; background: var(--bg); font-size: .9rem; border-left: 3px solid var(--coach); }
+.coach-out b { font-weight: 600; }
+
+/* ----- Learn ----- */
+.intro { margin: 0; color: var(--muted); max-width: 62ch; }
+h3 { margin: 0; font-family: var(--display); font-weight: 700; font-size: 1.05rem; }
+.method { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; counter-reset: m; }
+.method li { display: grid; grid-template-columns: 30px 1fr; gap: 10px; }
+.method li::before { counter-increment: m; content: counter(m); width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; background: var(--coach); color: #fff; font-weight: 700; font-family: var(--display); }
+.method b { display: block; font-family: var(--display); font-weight: 700; }
+.method span { color: var(--muted); font-size: .93rem; }
+.tips { padding-left: 1.1em; margin: 0; display: grid; gap: 6px; color: var(--muted); }
+.tips b { color: var(--fg); font-weight: 600; }
+details.idea-card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+details.idea-card > summary { list-style: none; cursor: pointer; padding: 12px 14px; display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; align-items: center; }
+details.idea-card > summary::-webkit-details-marker { display: none; }
+details.idea-card > summary b { font-family: var(--display); font-weight: 700; }
+details.idea-card > summary span { grid-column: 1; color: var(--muted); font-size: .88rem; }
+details.idea-card > summary em { grid-row: 1 / span 2; grid-column: 2; font-style: normal; font-size: .75rem; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
+.idea-body { padding: 0 14px 14px; display: grid; gap: 10px; font-size: .92rem; }
+.idea-body h4 { margin: 0; font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); }
+.idea-body ul, .idea-body ol { margin: 4px 0 0; padding-left: 1.2em; display: grid; gap: 3px; }
+.ideas { display: grid; gap: 8px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+.pat { font: inherit; text-align: left; padding: 10px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); cursor: pointer; display: grid; gap: 8px; min-width: 0; }
 .pat .board { box-shadow: none; border-radius: 6px; pointer-events: none; }
 .pat strong { font-family: var(--display); font-weight: 700; font-size: .95rem; line-height: 1.2; }
 .pat span { font-size: .8rem; color: var(--muted); }
 .pat .done { color: var(--good); font-weight: 600; }
+.seg { display: flex; gap: 6px; flex-wrap: wrap; }
+.seg button { font: inherit; font-size: .85rem; font-weight: 600; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--muted); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
 
-/* ----- Stats ----- */
-.big { display: flex; align-items: baseline; gap: 10px; }
+/* ----- Progress ----- */
+.big { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
 .big output { font-family: var(--display); font-weight: 800; font-size: 3rem; line-height: 1; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
 .big span { color: var(--muted); }
 .spark { width: 100%; height: 90px; display: block; }
@@ -320,10 +248,14 @@ button:focus-visible, .sq:focus-visible { outline: 3px solid var(--hint); outlin
 .tile b { display: block; font-size: .66rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
 .tile output { font-family: var(--display); font-weight: 700; font-size: 1.3rem; font-variant-numeric: tabular-nums; }
 .themes { display: grid; gap: 8px; }
-.theme { display: grid; grid-template-columns: 7.5rem 1fr 3.2rem; gap: 10px; align-items: center; font-size: .9rem; }
+.theme { display: grid; grid-template-columns: 7.5rem 1fr 3.6rem; gap: 10px; align-items: center; font-size: .9rem; }
 .theme .bar { height: 8px; border-radius: 4px; background: var(--bg); overflow: hidden; }
 .theme .bar i { display: block; height: 100%; background: var(--accent); border-radius: 4px; }
 .theme output { text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+.focus-list { display: grid; gap: 8px; }
+.focus-item { display: flex; align-items: center; gap: 10px; }
+.focus-item span { flex: 1; min-width: 0; font-size: .92rem; }
+.focus-item small { display: block; color: var(--muted); }
 .recent { display: grid; gap: 6px; font-size: .9rem; }
 .recent div { display: flex; gap: 10px; align-items: center; }
 .recent .r { margin-left: auto; font-variant-numeric: tabular-nums; }
@@ -331,9 +263,32 @@ button:focus-visible, .sq:focus-visible { outline: 3px solid var(--hint); outlin
 .pill.ok { background: var(--good); }
 .pill.half { background: var(--hint); color: #1b2130; }
 .pill.no { background: var(--bad); }
-h3 { margin: 0; font-family: var(--display); font-weight: 700; font-size: 1rem; }
 .empty { color: var(--muted); margin: 0; }
-@media (max-width: 380px) { .tiles { grid-template-columns: repeat(2, 1fr); } }
+.setting { display: flex; align-items: center; gap: 12px; }
+.setting > span { flex: 1; min-width: 0; }
+.setting small { display: block; color: var(--muted); font-size: .84rem; }
+.switch { position: relative; width: 46px; height: 28px; flex-shrink: 0; }
+.switch input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+.switch i { position: absolute; inset: 0; border-radius: 999px; background: var(--line); transition: background 150ms; pointer-events: none; }
+.switch i::after { content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; transition: transform 150ms; box-shadow: 0 1px 2px rgba(0, 0, 0, .3); }
+.switch input:checked + i { background: var(--accent); }
+.switch input:checked + i::after { transform: translateX(18px); }
+.switch input:focus-visible + i { outline: 3px solid var(--hint); outline-offset: 2px; }
+input[type="number"] { font: inherit; width: 6.5em; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); font-variant-numeric: tabular-nums; }
+
+/* ----- Onboarding ----- */
+.onboard { position: fixed; inset: 0; z-index: 80; background: var(--bg); overflow-y: auto; }
+.onboard .inner { box-sizing: border-box; max-width: 520px; margin: 0 auto; padding-block: 32px 32px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 18px; }
+.onboard h2 { margin: 0; font-family: var(--display); font-weight: 800; font-size: 2rem; line-height: 1.05; letter-spacing: -.02em; text-wrap: balance; }
+.levels { display: grid; gap: 8px; }
+.level { font: inherit; text-align: left; display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); cursor: pointer; }
+.level b { font-family: var(--display); font-weight: 700; }
+.level span { flex: 1; min-width: 0; }
+.level small { display: block; color: var(--muted); }
+.level em { font-style: normal; font-variant-numeric: tabular-nums; color: var(--muted); font-weight: 600; }
+.level[aria-pressed="true"] { border: 2px solid var(--accent); padding: 11px 13px; background: var(--accent-soft); }
+.own { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+@media (max-width: 380px) { .tiles { grid-template-columns: repeat(2, 1fr); } .theme { grid-template-columns: 6rem 1fr 3.4rem; } }
 @media (prefers-reduced-motion: reduce) { .pc { transition: none; } .sq.hint::after { animation: none; } }
 </style>
 </head>
@@ -350,68 +305,158 @@ h3 { margin: 0; font-family: var(--display); font-weight: 700; font-size: 1rem; 
 
   <nav class="tabs" role="tablist">
     <button type="button" role="tab" id="tab-train" aria-selected="true">Train</button>
-    <button type="button" role="tab" id="tab-patterns" aria-selected="false">Patterns</button>
-    <button type="button" role="tab" id="tab-stats" aria-selected="false">Stats</button>
+    <button type="button" role="tab" id="tab-learn" aria-selected="false">Learn</button>
+    <button type="button" role="tab" id="tab-stats" aria-selected="false">Progress</button>
   </nav>
 
-  <section id="view-train">
-    <div style="display:grid;gap:12px">
-      <div class="prompt">
-        <span class="turn" id="turn-dot"></span>
-        <h2 id="prompt">White to move</h2>
-        <span class="badge mate" id="mate-badge">Mate in 1</span>
-        <span class="badge" id="p-rating">Puzzle 1000</span>
+  <!-- ================= Train ================= -->
+  <section id="view-train" class="stack">
+    <div class="focus-bar" id="focus-bar" hidden><span>Practising <b id="focus-name"></b></span><button type="button" id="focus-clear">Mixed puzzles</button></div>
+    <div class="prompt">
+      <span class="turn" id="turn-dot"></span>
+      <h2 id="prompt">White to move</h2>
+      <span class="badge mate" id="goal-badge">Find the best move</span>
+      <span class="badge" id="p-rating">Puzzle 1000</span>
+    </div>
+    <div class="board-wrap">
+      <div class="board" id="board" role="grid" aria-label="Chess board"></div>
+      <div class="promo" id="promo" hidden><div id="promo-row"></div></div>
+    </div>
+    <div class="confirm" id="confirm" hidden>
+      <p><b>Blunder check.</b> Before <b id="confirm-move"></b>: what are their checks and captures after it?</p>
+      <button class="btn small" type="button" id="confirm-no">Rethink</button>
+      <button class="btn small primary" type="button" id="confirm-yes">Play it</button>
+    </div>
+
+    <details class="coach" id="coach">
+      <summary>Think it through <span class="sub">· the coach's routine</span></summary>
+      <ol class="steps">
+        <li class="step" data-step="last"><div>What did their last move change?<small>New attacks, and what it stopped guarding</small></div><button class="btn small coachy" type="button" data-tool="last">Show</button></li>
+        <li class="step" data-step="checks"><div>Checks<small>The most forcing moves come first</small></div><button class="btn small coachy" type="button" data-tool="checks">Show</button></li>
+        <li class="step" data-step="captures"><div>Captures<small>Red rings are pieces nobody defends</small></div><button class="btn small coachy" type="button" data-tool="captures">Show</button></li>
+        <li class="step" data-step="threats"><div>Threats<small>Moves that attack something valuable or loose</small></div><button class="btn small coachy" type="button" data-tool="threats">Show</button></li>
+        <li class="step" data-step="loose"><div>Loose pieces and the king<small>Undefended pieces on both sides, the king's free squares</small></div><button class="btn small coachy" type="button" data-tool="loose">Show</button></li>
+        <li class="step" data-step="calc"><div>Pick 2–3 candidates and calculate<small>For each: their most forcing reply, then yours</small></div><button class="btn small coachy" type="button" data-tool="calc">Tips</button></li>
+      </ol>
+      <p class="coach-out" id="coach-out" hidden></p>
+    </details>
+
+    <div class="card">
+      <div class="status" id="status">
+        <span class="mark" id="mark">?</span>
+        <p><strong id="st-title">Find the best move</strong><span class="idea" id="st-text"></span></p>
       </div>
-      <div class="board-wrap">
-        <div class="board" id="board" role="grid" aria-label="Chess board"></div>
-        <div class="promo" id="promo" hidden><div id="promo-row"></div></div>
+      <div class="lesson" id="lesson" hidden>
+        <b>What to notice next time</b>
+        <span id="lesson-cue"></span>
+        <button type="button" id="lesson-link"></button>
       </div>
-      <div class="card">
-        <div class="status" id="status">
-          <span class="mark" id="mark">?</span>
-          <p><strong id="st-title">Find the checkmate</strong><span class="idea" id="st-text">Tap a piece, then a square. Or drag it.</span></p>
-        </div>
-        <div class="moves" id="moves" hidden></div>
-        <div class="actions">
-          <button class="btn" id="btn-hint" type="button">Hint</button>
-          <button class="btn" id="btn-solution" type="button">Solution</button>
-          <button class="btn" id="btn-retry" type="button" hidden>Retry</button>
-          <button class="btn primary" id="btn-next" type="button">Skip</button>
-        </div>
+      <div class="moves" id="moves" hidden></div>
+      <div class="actions">
+        <button class="btn" id="btn-hint" type="button">Hint</button>
+        <button class="btn" id="btn-solution" type="button">Solution</button>
+        <button class="btn" id="btn-retry" type="button" hidden>Retry</button>
+        <button class="btn primary" id="btn-next" type="button">Skip</button>
       </div>
     </div>
   </section>
 
-  <section id="view-patterns" hidden>
-    <div style="display:grid;gap:12px">
-      <p class="intro">The named checkmates every player should recognise on sight. Practice runs here don't change your rating.</p>
+  <!-- ================= Learn ================= -->
+  <section id="view-learn" class="stack" hidden>
+    <div class="seg" role="group" aria-label="Learn sections">
+      <button type="button" data-sec="method" aria-pressed="true">How to think</button>
+      <button type="button" data-sec="tactics" aria-pressed="false">Tactics</button>
+      <button type="button" data-sec="mates" aria-pressed="false">Checkmates</button>
+      <button type="button" data-sec="strategy" aria-pressed="false">Strategy</button>
+    </div>
+
+    <div id="sec-method" class="stack">
+      <div class="card">
+        <h3>A routine for every move</h3>
+        <p class="intro">Strong players don't see more by magic. They look at the same things in the same order, every time. Use this routine on every puzzle and in your own games until it's automatic. The coach on the Train tab walks you through it.</p>
+        <ol class="method">
+          <li><div><b>What did their move change?</b><span>Every move does two things: it attacks something new, and it stops guarding something. Ask both. Most blunders, theirs and yours, live here.</span></div></li>
+          <li><div><b>Checks, captures, threats</b><span>List every check, then every capture, then every move that threatens something. Forcing moves limit your opponent's choices, so they're the easiest to calculate and the most likely to win.</span></div></li>
+          <li><div><b>Loose pieces and the king</b><span>"Loose pieces drop off." Spot every undefended piece, theirs and yours. Count the enemy king's free squares. Few squares means a mating idea is likely.</span></div></li>
+          <li><div><b>Candidates, then calculate</b><span>Choose two or three candidate moves. For each, find their most forcing reply, then your answer. Stop when the position is quiet and count the material.</span></div></li>
+          <li><div><b>Blunder check, then move</b><span>Before you touch the piece: after this move, what are their checks and captures? If nothing tactical works, improve your worst piece instead.</span></div></li>
+        </ol>
+        <div class="actions"><button class="btn primary" type="button" id="practice-method">Practise with the coach</button></div>
+      </div>
+      <div class="card">
+        <h3>Calculating well</h3>
+        <ul class="tips">
+          <li><b>Forcing first.</b> Calculate checks and captures before quiet moves. They have the fewest replies.</li>
+          <li><b>Assume the best defence.</b> Don't hope. Ask what you'd play in their shoes.</li>
+          <li><b>Finish the line.</b> Keep going until there are no more checks or captures, then evaluate.</li>
+          <li><b>Look for the in-between move.</b> Before recapturing automatically, check whether there's a stronger move first.</li>
+          <li><b>Try to refute your favourite.</b> Look hard for the reply that beats the move you like, before you play it.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div id="sec-tactics" class="stack" hidden>
+      <p class="intro">The patterns that decide most games. Open one to see what it is, the signs to look for, and how to apply it. Practise serves puzzles of that type near your rating.</p>
+      <div class="ideas" id="tactics-list"></div>
+    </div>
+
+    <div id="sec-mates" class="stack" hidden>
+      <p class="intro">Checkmate ideas and the named patterns every player should recognise on sight. The pattern boards below are practice and don't change your rating.</p>
+      <div class="ideas" id="mates-list"></div>
       <div class="grid" id="patterns"></div>
     </div>
-  </section>
 
-  <section id="view-stats" hidden>
-    <div style="display:grid;gap:14px">
-      <div class="card">
-        <div class="big"><output id="st-rating">1000</output><span id="st-change">Puzzle rating</span></div>
-        <svg class="spark" id="spark" viewBox="0 0 320 90" preserveAspectRatio="none" aria-label="Rating history"></svg>
-        <div class="tiles">
-          <div class="tile"><b>Solved</b><output id="t-solved">0</output></div>
-          <div class="tile"><b>Accuracy</b><output id="t-acc">–</output></div>
-          <div class="tile"><b>Streak</b><output id="t-streak">0</output></div>
-          <div class="tile"><b>Best</b><output id="t-best">0</output></div>
-        </div>
-      </div>
-      <div class="card">
-        <h3>By theme</h3>
-        <div class="themes" id="themes"></div>
-      </div>
-      <div class="card">
-        <h3>Recent puzzles</h3>
-        <div class="recent" id="recent"></div>
-      </div>
-      <div><button class="btn" id="btn-reset" type="button">Reset progress</button> <span id="reset-confirm" hidden><button class="btn" id="btn-reset-yes" type="button" style="color:var(--bad)">Yes, erase everything</button></span></div>
+    <div id="sec-strategy" class="stack" hidden>
+      <p class="intro">When there's no tactic, you need a plan. These ideas tell you what to aim for, and the steps turn each one into moves.</p>
+      <div class="ideas" id="strategy-list"></div>
     </div>
   </section>
+
+  <!-- ================= Progress ================= -->
+  <section id="view-stats" class="stack" hidden>
+    <div class="card">
+      <div class="big"><output id="st-rating">1000</output><span id="st-change">Puzzle rating</span></div>
+      <svg class="spark" id="spark" viewBox="0 0 320 90" preserveAspectRatio="none" aria-label="Rating history"></svg>
+      <div class="tiles">
+        <div class="tile"><b>Solved</b><output id="t-solved">0</output></div>
+        <div class="tile"><b>Accuracy</b><output id="t-acc">–</output></div>
+        <div class="tile"><b>Streak</b><output id="t-streak">0</output></div>
+        <div class="tile"><b>Best</b><output id="t-best">0</output></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Work on next</h3>
+      <div class="focus-list" id="focus-list"></div>
+    </div>
+    <div class="card">
+      <h3>By theme</h3>
+      <div class="themes" id="themes"></div>
+    </div>
+    <div class="card">
+      <h3>Recent puzzles</h3>
+      <div class="recent" id="recent"></div>
+    </div>
+    <div class="card">
+      <h3>Settings</h3>
+      <div class="setting"><span>Your rating<small>Puzzles are picked around this number. It updates as you solve.</small></span><input type="number" id="set-rating" min="400" max="2800" step="10" aria-label="Your rating"><button class="btn small" type="button" id="set-rating-save">Set</button></div>
+      <div class="setting"><span>Open the coach on each puzzle<small>Shows the thinking routine under the board.</small></span><label class="switch"><input type="checkbox" id="set-coach" aria-label="Open the coach on each puzzle"><i></i></label></div>
+      <div class="setting"><span>Blunder check before moving<small>Asks you to confirm each move after checking their replies.</small></span><label class="switch"><input type="checkbox" id="set-confirm" aria-label="Blunder check before moving"><i></i></label></div>
+      <div class="actions"><button class="btn" id="btn-reset" type="button">Reset progress</button><button class="btn" id="btn-reset-yes" type="button" hidden style="color:var(--bad)">Yes, erase everything</button></div>
+    </div>
+  </section>
+</div>
+
+<!-- ================= Onboarding ================= -->
+<div class="onboard" id="onboard" hidden>
+  <div class="inner">
+    <p class="intro" style="font-weight:600;color:var(--accent)">Welcome to Mating Net</p>
+    <h2>How strong are you right now?</h2>
+    <p class="intro">Puzzles start near your level and adjust as you go. If you play on chess.com or Lichess, your rapid rating is a good starting point.</p>
+    <div class="levels" id="levels"></div>
+    <div class="own"><label for="own-rating">Or enter a rating</label><input type="number" id="own-rating" min="400" max="2800" step="10" placeholder="1350"></div>
+    <div class="setting"><span>Turn on the coach<small>Recommended. It teaches a step-by-step way to look at every position.</small></span><label class="switch"><input type="checkbox" id="ob-coach" checked aria-label="Turn on the coach"><i></i></label></div>
+    <button class="btn primary" type="button" id="ob-start" style="justify-self:start">Start training</button>
+  </div>
 </div>
 
 <script>
@@ -419,17 +464,112 @@ const PUZZLES = /*PUZZLES*/[];
 (() => {
   const $ = (id) => document.getElementById(id);
   const GLYPH = { k: "♚", q: "♛", r: "♜", b: "♝", n: "♞", p: "♟" };
-  const VS = "︎"; // ask for the text (not emoji) form of the chess symbols
+  const NAME = { k: "king", q: "queen", r: "rook", b: "bishop", n: "knight", p: "pawn" };
+  const VAL = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 100 };
+  const VS = "︎"; // text (not emoji) form of the chess symbols
   const FILES = "abcdefgh";
   const STORE = "mating-net-v1";
   const BY_ID = Object.fromEntries(PUZZLES.map((p) => [p.id, p]));
 
-  // ---------- Persistence ----------
-  let prog = { rating: 1000, history: [], seen: {}, streak: 0, best: 0, sound: true };
-  try { const s = JSON.parse(localStorage.getItem(STORE)); if (s) prog = { ...prog, ...s }; } catch {}
+  // ================= Ideas library =================
+  // tag: the puzzle theme used for practice; null means reading only.
+  const TACTICS = [
+    { tag: "Hanging piece", name: "Loose pieces", short: "A piece nobody defends can simply be taken.",
+      what: "An undefended piece is a target. Many games are won by noticing that something is just free, or that a capture leaves a piece unprotected.",
+      cues: ["A piece moved away and stopped guarding another", "A capture where the recapture doesn't work", "Pieces with no defenders (use the coach's loose pieces tool)"],
+      apply: ["After every opponent move, count the defenders of each of their pieces.", "If a piece has no defender, look for a way to attack it or take it.", "Before taking, check it isn't poisoned: what can they do after you capture?"] },
+    { tag: "Fork", name: "Fork", short: "One piece attacks two targets at once.",
+      what: "A fork is a double attack by a single piece. They can only save one target. Knights fork best because their attack can't be blocked.",
+      cues: ["Two valuable pieces a knight's jump from the same square", "King and queen, or king and rook, on the same line", "Pieces that are loose or worth more than your attacker"],
+      apply: ["Find their king, queen, rooks and any loose piece.", "Look for a square that hits two of them at once.", "If that square is guarded, look for a check or capture that drives the defender away first."] },
+    { tag: "Pin", name: "Pin", short: "A piece can't move without exposing something bigger.",
+      what: "A pinned piece stands in front of a more valuable piece on a line. Against the king the pin is absolute: the piece can't legally move. Pinned pieces are also poor defenders.",
+      cues: ["Their king or queen lined up with another piece on a file, rank or diagonal", "A defender that is pinned, so it isn't really defending", "A pinned piece you can attack again, for example with a pawn"],
+      apply: ["Draw lines from their king and queen. Is exactly one of their pieces in the way?", "Put a bishop, rook or queen on that line.", "Then pile up on the pinned piece. It can't run."] },
+    { tag: "Skewer", name: "Skewer", short: "Attack a big piece; when it moves, take what's behind it.",
+      what: "A skewer is a pin in reverse. The more valuable piece is in front. When it steps aside, the piece behind it is lost.",
+      cues: ["King or queen in front of a rook or another piece on an open line", "Long open diagonals and files in the endgame"],
+      apply: ["Look for two of their pieces on the same open line.", "Attack the front one, ideally with check.", "After it moves, take the piece behind."] },
+    { tag: "Discovered attack", name: "Discovered attack", short: "Move one piece to unleash another.",
+      what: "When a piece moves off a line, the rook, bishop or queen behind it suddenly attacks. Two threats happen at once: the moving piece's and the uncovered one. A discovered check is the strongest version.",
+      cues: ["Your piece stands between your long-range piece and their king or queen", "The front piece can move with a threat of its own"],
+      apply: ["Find lines from your bishops, rooks and queen that are blocked by your own piece.", "Move that blocking piece with its own threat: a check, a capture, an attack on the queen.", "They can answer only one threat."] },
+    { tag: "Double check", name: "Double check", short: "Check from two pieces at once: the king must move.",
+      what: "A double check can't be blocked or answered with a capture, because two pieces give check. Only a king move works, which often leads straight to mate.",
+      cues: ["A discovered check where the moving piece also gives check", "A king with few free squares"],
+      apply: ["Look for a discovered check first.", "Choose the square for the moving piece where it also gives check.", "Then list the king's free squares. Often there are none."] },
+    { tag: "Sacrifice", name: "Sacrifice, decoy and deflection", short: "Give material to drag a piece somewhere bad or pull a defender away.",
+      what: "A decoy lures a piece, often the king, onto a fatal square. A deflection pulls a defender away from its job. Both usually start with a sacrifice.",
+      cues: ["One of their pieces does an important job, like guarding mate or another piece", "A square near the king where you'd love their king or queen to stand"],
+      apply: ["Ask: which of their pieces has the most important defensive job?", "Find a check or capture that forces that piece to move or recapture.", "Calculate the follow-up. The sacrifice must win back more than it gives."] },
+    { tag: "Back rank", name: "Back-rank weakness", short: "A king stuck behind its own pawns can be mated on the back rank.",
+      what: "If the king has no free square and the back rank is guarded by only one piece, a rook or queen check there can be mate. Defenders of the back rank can be overloaded.",
+      cues: ["King on the back rank with its pawns still in front", "Only one piece guarding that rank"],
+      apply: ["Count the defenders of their back rank.", "Attack the rank with more pieces than defend it, or deflect the defender.", "In your own games, make an escape square for your king when you have time."] },
+    { tag: "Promotion", name: "Promotion", short: "A pawn about to queen outweighs almost anything.",
+      what: "A pawn on the seventh rank is a huge threat. Tactics often aim to clear its path or deflect the piece that stops it.",
+      cues: ["Advanced passed pawns", "A single piece stopping a pawn from queening"],
+      apply: ["Find the piece that stops the pawn.", "Deflect, block or exchange it.", "Check whether promoting to a knight gives check or a fork."] },
+    { tag: "Quiet move", name: "Quiet moves", short: "Sometimes the winning move isn't a check or a capture.",
+      what: "A quiet move makes a threat that can't be stopped, or takes away the last free square. It's hard to see because we scan forcing moves first.",
+      cues: ["Forcing moves almost work, but the king escapes or a defender holds", "Their pieces are badly placed and can't defend in time"],
+      apply: ["If checks and captures fail, ask what single extra resource would make them work.", "Find a quiet move that adds it, like taking a free square or adding an attacker.", "Check they have no strong checks of their own in reply."] },
+    { tag: null, name: "Removing the defender", short: "Capture or chase away the piece that holds everything together.",
+      what: "If one piece defends something important, eliminate it, even at a cost, and the important thing falls.",
+      cues: ["One piece defends two things", "A knight or bishop guarding the squares around the king"],
+      apply: ["Ask which of their pieces is the key defender.", "Capture it, exchange it, or attack it so it must move.", "Then take what it was guarding."] },
+    { tag: null, name: "The in-between move", short: "Before you recapture, look for something better first.",
+      what: "Also called a zwischenzug. Instead of the expected reply, insert a check or threat they must answer, then recapture with interest.",
+      cues: ["An exchange is happening and you're about to recapture", "You have a check available"],
+      apply: ["Before every recapture, run checks, captures and threats again.", "If a forcing move improves your position, play it first."] },
+  ];
+  const MATES = [
+    { tag: "Mate in 1", name: "Mate in one", short: "Find the single move that ends the game.",
+      what: "Practise looking at every check. Most missed mates are missed because a check was never considered.",
+      cues: ["Their king has few or no free squares", "You have pieces near the king"],
+      apply: ["List every check.", "For each, count the king's free squares and whether the checking piece can be captured or blocked."] },
+    { tag: "Mate in 2", name: "Mate in two", short: "One preparing move, then mate.",
+      what: "Usually a forcing check or sacrifice that removes the last defender or free square, then the final blow.",
+      cues: ["A mate in one that almost works", "One defender or free square spoiling it"],
+      apply: ["Find the mate that almost works.", "Ask what stops it, and find a forcing move that removes that obstacle."] },
+    { tag: "Smothered", name: "Smothered mate", short: "A knight mates a king boxed in by its own pieces.",
+      what: "When the king is surrounded by its own pieces, a knight check can't be blocked. A famous version starts with a queen sacrifice next to the king.",
+      cues: ["King in the corner with pieces on every neighbouring square", "Your knight can reach a square that checks the cornered king"],
+      apply: ["Look for a knight check the king can't escape.", "If a rook covers the square, consider sacrificing the queen to force it there."] },
+  ];
+  const STRATEGY = [
+    { name: "King safety", short: "Get your king safe early; attack theirs when it isn't.",
+      what: "An exposed king turns every enemy move into a threat. Castle early, keep pawns in front of your king, and open lines towards an uncastled king.",
+      cues: ["A king stuck in the centre", "Missing pawns in front of a castled king", "Many of your pieces aimed at their king"],
+      apply: ["Castle within the first ten moves unless there's a concrete reason not to.", "Don't push the pawns in front of your castled king without a reason.", "If their king is weak, bring more pieces to that side before attacking."] },
+    { name: "Improve your worst piece", short: "When nothing else is happening, fix your least active piece.",
+      what: "Games are often decided by the piece that does nothing. Activating it is the simplest plan in quiet positions.",
+      cues: ["A bishop blocked by its own pawns", "A rook on a closed file", "A knight on the edge"],
+      apply: ["Find your piece with the fewest useful moves.", "Find its best square: central, safe, on open lines.", "Plan the route and play it one move at a time."] },
+    { name: "Open files and outposts", short: "Rooks want open files; knights want protected squares.",
+      what: "Rooks belong on files with no pawns. Knights are strongest on squares in enemy territory that pawns can't attack.",
+      cues: ["A file with no pawns", "A square your pawn defends that no enemy pawn can attack"],
+      apply: ["Put a rook on the open file before your opponent does.", "Double your rooks on it if you can.", "Route a knight to the outpost and keep it there."] },
+    { name: "Pawn structure", short: "Pawns can't move back, so their shape decides the plans.",
+      what: "Isolated, doubled and backward pawns are long-term targets. Passed pawns are long-term assets. The structure tells you where to play.",
+      cues: ["A pawn with no friendly pawns on the files next to it", "A pawn with no enemy pawns ahead of it on its file or the files beside it"],
+      apply: ["Name the weak pawns on both sides.", "Put pieces in front of their weak pawns and attack them.", "Push your passed pawns when it's safe, with pieces supporting them."] },
+    { name: "Prophylaxis", short: "Ask what your opponent wants, and stop it.",
+      what: "Before making your own plan, look at theirs. A move that prevents their best idea is often stronger than one that pursues yours.",
+      cues: ["They have an obvious attacking idea", "One particular move would improve their position a lot"],
+      apply: ["Ask: if it were their move, what would they play?", "If it's dangerous, find a move that prevents it while improving your position."] },
+    { name: "Endgame basics", short: "Activate the king and push passed pawns.",
+      what: "With fewer pieces, the king becomes a fighting piece. Rooks belong behind passed pawns. Trading pieces helps the side with more material.",
+      cues: ["Queens are off the board", "Only a few pieces left"],
+      apply: ["Bring your king towards the centre.", "Create a passed pawn on the side where you have more pawns.", "When ahead in material, trade pieces, not pawns."] },
+  ];
+
+  // ================= Persistence =================
+  let prog = { rating: 1000, history: [], seen: {}, streak: 0, best: 0, sound: true, setup: false, coach: true, confirm: false, focus: null };
+  try { const s = JSON.parse(localStorage.getItem(STORE)); if (s) prog = { ...prog, setup: true, ...s }; } catch {}
   const persist = () => { try { localStorage.setItem(STORE, JSON.stringify(prog)); } catch {} };
 
-  // ---------- Sound ----------
+  // ================= Sound =================
   let actx = null;
   const unlock = () => { if (actx) { if (actx.state === "suspended") actx.resume(); return; } try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch {} };
   function tone(f, d, type = "sine", v = 0.08, w = 0) {
@@ -447,11 +587,44 @@ const PUZZLES = /*PUZZLES*/[];
     hint: () => tone(880, .12, "sine", .06),
   };
 
-  // ---------- Mate search (used when you find a different winning move) ----------
+  // ================= Board geometry =================
+  const sqName = (f, r) => FILES[f] + (r + 1);
+  const fr = (sq) => [FILES.indexOf(sq[0]), +sq[1] - 1];
+  const STEPS = {
+    n: [[1, 2], [2, 1], [2, -1], [1, -2], [-1, -2], [-2, -1], [-2, 1], [-1, 2]],
+    k: [[1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1], [0, -1], [1, -1]],
+    b: [[1, 1], [1, -1], [-1, 1], [-1, -1]],
+    r: [[1, 0], [-1, 0], [0, 1], [0, -1]],
+  };
+  STEPS.q = [...STEPS.b, ...STEPS.r];
+  // Squares attacked by the piece on sq (ignores pins).
+  function attacksFrom(g, sq) {
+    const p = g.get(sq); if (!p) return [];
+    const [f, r] = fr(sq), out = [];
+    const on = (x, y) => x >= 0 && x < 8 && y >= 0 && y < 8;
+    if (p.type === "p") { const dy = p.color === "w" ? 1 : -1; for (const dx of [-1, 1]) if (on(f + dx, r + dy)) out.push(sqName(f + dx, r + dy)); return out; }
+    if (p.type === "n" || p.type === "k") { for (const [dx, dy] of STEPS[p.type]) if (on(f + dx, r + dy)) out.push(sqName(f + dx, r + dy)); return out; }
+    for (const [dx, dy] of STEPS[p.type]) {
+      let x = f + dx, y = r + dy;
+      while (on(x, y)) { const s = sqName(x, y); out.push(s); if (g.get(s)) break; x += dx; y += dy; }
+    }
+    return out;
+  }
+  function piecesOf(g, color) {
+    const out = [];
+    for (let r = 0; r < 8; r++) for (let f = 0; f < 8; f++) { const s = sqName(f, r), p = g.get(s); if (p && p.color === color) out.push([s, p]); }
+    return out;
+  }
+  const attackersOf = (g, sq, color) => piecesOf(g, color).filter(([s]) => s !== sq && attacksFrom(g, s).includes(sq)).map(([s]) => s);
+  const looseOf = (g, color) => piecesOf(g, color).filter(([s, p]) => p.type !== "k" && attackersOf(g, s, color).length === 0);
+  const pieceAt = (g, s) => { const p = g.get(s); return p ? `${NAME[p.type]} on ${s}` : s; };
+  const listText = (arr) => arr.length <= 1 ? arr.join("") : arr.slice(0, -1).join(", ") + " and " + arr[arr.length - 1];
+
+  // ================= Mate search for alternative solutions =================
   function canMate(c, n) {
     for (const m of c.moves()) {
       c.move(m);
-      let ok = c.in_checkmate() || (n > 1 && !c.game_over() && defenceFails(c, n - 1));
+      const ok = c.in_checkmate() || (n > 1 && !c.game_over() && defenceFails(c, n - 1));
       c.undo();
       if (ok) return true;
     }
@@ -463,16 +636,6 @@ const PUZZLES = /*PUZZLES*/[];
     for (const r of rs) { c.move(r); const ok = canMate(c, n); c.undo(); if (!ok) return false; }
     return true;
   }
-  function keyMoves(c, n) {
-    const out = [];
-    for (const m of c.moves({ verbose: true })) {
-      c.move(m);
-      if (c.in_checkmate() || (n > 1 && !c.game_over() && defenceFails(c, n - 1))) out.push(m);
-      c.undo();
-    }
-    return out;
-  }
-  // The defence that holds out longest.
   function stubbornReply(c, n) {
     let best = null, bestLen = -1;
     for (const r of c.moves({ verbose: true })) {
@@ -484,47 +647,64 @@ const PUZZLES = /*PUZZLES*/[];
     }
     return best;
   }
+  const isMatePuzzle = (p) => p.line[p.line.length - 1].includes("#");
 
-  // ---------- Puzzle session ----------
-  let P = null;   // current puzzle
-  let G = null;   // chess.js game
-  let S = null;   // session state
-  let view = "train";
+  // ================= Session =================
+  let P = null, G = null, S = null, view = "train";
 
   function startPuzzle(p, rated = true) {
     P = p;
     G = new Chess(p.fen);
+    const side = p.setup ? (G.turn() === "w" ? "b" : "w") : G.turn();
     S = { ply: 0, left: Math.ceil(p.line.length / 2), off: false, failed: false, hints: 0, done: false, recorded: !rated, rated,
-      side: G.turn(), sel: null, last: null, wrong: null, hint: [], played: [], busy: false };
-    const sideName = S.side === "w" ? "White" : "Black";
-    $("turn-dot").className = "turn " + S.side;
+      side, sel: null, last: null, wrong: null, hint: [], marks: {}, played: [], busy: !!p.setup, used: new Set(), pending: null };
+    const sideName = side === "w" ? "White" : "Black";
+    $("turn-dot").className = "turn " + side;
     $("prompt").textContent = `${sideName} to move`;
-    $("mate-badge").textContent = `Mate in ${S.left}`;
+    const mate = isMatePuzzle(p);
+    $("goal-badge").textContent = mate ? `Mate in ${S.left}` : "Find the best move";
     $("p-rating").textContent = p.name ? p.name : `Puzzle ${p.rating}`;
-    setStatus("", "Find the checkmate", S.left === 1 ? "One move wins. Check every forcing move." : `You have ${S.left} moves. Your opponent will defend as well as possible.`);
     $("moves").hidden = true;
+    $("lesson").hidden = true;
+    $("confirm").hidden = true;
     $("btn-hint").disabled = false;
     $("btn-solution").disabled = false;
     $("btn-retry").hidden = true;
-    $("btn-next").textContent = rated ? "Skip" : "Back to patterns";
-    render();
+    $("btn-next").textContent = rated ? "Skip" : "Back";
+    $("coach").open = prog.coach;
+    $("coach-out").hidden = true;
+    document.querySelectorAll(".step").forEach((s) => s.classList.remove("done"));
+    $("focus-bar").hidden = !(rated && prog.focus);
+    $("focus-name").textContent = prog.focus ? (ideaFor(prog.focus)?.name || prog.focus).toLowerCase() : "";
+    if (p.setup) {
+      setStatus("", "Watch their move…", "");
+      render();
+      setTimeout(() => {
+        if (P !== p) return;
+        const m = G.move(p.setup);
+        S.last = m; S.setupMove = m; S.busy = false;
+        (m.captured ? sfx.capture : sfx.move)();
+        render(m);
+        setStatus("", "Your move", `${side === "w" ? "Black" : "White"} just played <b>${m.san}</b>. What does it allow?`);
+      }, 650);
+    } else {
+      render();
+      setStatus("", mate ? "Find the checkmate" : "Find the best move", S.left === 1 ? "Check every forcing move: checks first, then captures." : `You have ${S.left} moves. Your opponent will defend as well as possible.`);
+    }
   }
 
-  function setStatus(kind, title, text) {
+  function setStatus(kind, title, html) {
     $("status").className = "status " + kind;
     $("mark").textContent = kind === "good" ? "✓" : kind === "bad" ? "✕" : "?";
     $("st-title").textContent = title;
-    $("st-text").innerHTML = text;
+    $("st-text").innerHTML = html;
   }
 
-  // ---------- Board rendering ----------
+  // ================= Rendering =================
   const boardEl = $("board");
   function squaresInOrder(orient) {
     const out = [];
-    for (let i = 0; i < 8; i++) for (let j = 0; j < 8; j++) {
-      const r = orient === "w" ? 7 - i : i, f = orient === "w" ? j : 7 - j;
-      out.push(FILES[f] + (r + 1));
-    }
+    for (let i = 0; i < 8; i++) for (let j = 0; j < 8; j++) out.push(sqName(orient === "w" ? j : 7 - j, orient === "w" ? 7 - i : i));
     return out;
   }
   function pieceSpan(p) {
@@ -533,13 +713,17 @@ const PUZZLES = /*PUZZLES*/[];
     s.textContent = GLYPH[p.type] + VS;
     return s;
   }
+  function findKing(color) {
+    for (const [s, p] of piecesOf(G, color)) if (p.type === "k") return s;
+    return null;
+  }
   function render(anim) {
     const orient = S.side;
     const targets = S.sel ? G.moves({ square: S.sel, verbose: true }) : [];
     const checkSq = G.in_check() ? findKing(G.turn()) : null;
     boardEl.textContent = "";
     squaresInOrder(orient).forEach((sq, idx) => {
-      const f = FILES.indexOf(sq[0]), r = +sq[1] - 1;
+      const [f, r] = fr(sq);
       const d = document.createElement("div");
       d.className = "sq " + ((f + r) % 2 ? "l" : "d");
       d.dataset.sq = sq;
@@ -549,85 +733,70 @@ const PUZZLES = /*PUZZLES*/[];
       if (checkSq === sq) d.classList.add("check");
       if (S.hint.includes(sq)) d.classList.add("hint");
       if (S.wrong === sq) d.classList.add("wrong");
+      if (S.marks[sq]) d.classList.add("mk", "mk-" + S.marks[sq]);
       const p = G.get(sq);
       if (idx % 8 === 0) { const c = document.createElement("span"); c.className = "coord r"; c.textContent = sq[1]; d.appendChild(c); }
       if (idx >= 56) { const c = document.createElement("span"); c.className = "coord f"; c.textContent = sq[0]; d.appendChild(c); }
-      const t = targets.find((m) => m.to === sq);
-      if (t) { const m = document.createElement("span"); m.className = p ? "ring" : "dot"; d.appendChild(m); }
+      if (targets.some((m) => m.to === sq)) { const m = document.createElement("span"); m.className = p ? "ring" : "dot"; d.appendChild(m); }
       if (p) {
         const s = pieceSpan(p);
         if (anim && anim.to === sq) {
-          // Slide from the origin square.
-          const df = FILES.indexOf(anim.from[0]) - f, dr = +anim.from[1] - 1 - r;
-          const sx = (orient === "w" ? df : -df) * 100, sy = (orient === "w" ? -dr : dr) * 100;
+          const [ff, rr] = fr(anim.from);
+          const df = ff - f, dr = rr - r;
           s.style.transition = "none";
-          s.style.transform = `translate(${sx}%, ${sy}%)`;
-          requestAnimationFrame(() => requestAnimationFrame(() => { s.style.transition = ""; s.style.transform = ""; }));
+          s.style.transform = `translate(${(orient === "w" ? df : -df) * 100}%, ${(orient === "w" ? -dr : dr) * 100}%)`;
           s.style.zIndex = 5;
+          requestAnimationFrame(() => requestAnimationFrame(() => { s.style.transition = ""; s.style.transform = ""; }));
         }
         d.appendChild(s);
       }
       boardEl.appendChild(d);
     });
   }
-  function findKing(color) {
-    for (let r = 0; r < 8; r++) for (let f = 0; f < 8; f++) { const sq = FILES[f] + (r + 1), p = G.get(sq); if (p && p.type === "k" && p.color === color) return sq; }
-    return null;
-  }
 
-  // ---------- Input: tap and drag ----------
+  // ================= Input =================
   let drag = null;
   boardEl.addEventListener("pointerdown", (e) => {
     unlock();
     const sqEl = e.target.closest(".sq");
-    if (!sqEl || !S || S.done || S.busy) return;
+    if (!sqEl || !S || S.done || S.busy || S.pending) return;
     const sq = sqEl.dataset.sq, p = G.get(sq);
     if (p && p.color === G.turn() && G.turn() === S.side) {
-      if (S.sel === sq) { drag = { sq, x: e.clientX, y: e.clientY, started: false, toggle: true }; }
-      else { S.sel = sq; S.wrong = null; render(); drag = { sq, x: e.clientX, y: e.clientY, started: false }; }
+      if (S.sel === sq) drag = { sq, x: e.clientX, y: e.clientY, toggle: true };
+      else { S.sel = sq; S.wrong = null; render(); drag = { sq, x: e.clientX, y: e.clientY }; }
       boardEl.setPointerCapture(e.pointerId);
-    } else if (S.sel) {
-      tryMove(S.sel, sq);
-    }
+    } else if (S.sel) tryMove(S.sel, sq);
   });
   boardEl.addEventListener("pointermove", (e) => {
     if (!drag) return;
-    if (!drag.started && Math.hypot(e.clientX - drag.x, e.clientY - drag.y) > 6) {
-      drag.started = true;
+    if (!drag.ghost && Math.hypot(e.clientX - drag.x, e.clientY - drag.y) > 6) {
       const p = G.get(drag.sq);
       const g = document.createElement("div");
       g.className = "ghost pc " + p.color;
       g.textContent = GLYPH[p.type] + VS;
-      g.style.fontSize = (boardEl.clientWidth * 0.104) + "px";
+      g.style.fontSize = boardEl.clientWidth * 0.104 + "px";
       document.body.appendChild(g);
       drag.ghost = g;
       boardEl.querySelector(`[data-sq="${drag.sq}"] .pc`)?.classList.add("lift");
     }
     if (drag.ghost) { drag.ghost.style.left = e.clientX + "px"; drag.ghost.style.top = e.clientY + "px"; }
   });
-  const endDrag = (e) => {
+  boardEl.addEventListener("pointerup", (e) => {
     if (!drag) return;
     const d = drag; drag = null;
     if (d.ghost) {
       d.ghost.remove();
       const el = document.elementFromPoint(e.clientX, e.clientY)?.closest(".sq");
-      if (el && el.dataset.sq !== d.sq) tryMove(d.sq, el.dataset.sq);
-      else render();
+      if (el && el.dataset.sq !== d.sq) tryMove(d.sq, el.dataset.sq); else render();
     } else if (d.toggle) { S.sel = null; render(); }
-  };
-  boardEl.addEventListener("pointerup", endDrag);
-  boardEl.addEventListener("pointercancel", () => { if (drag?.ghost) drag.ghost.remove(); drag = null; render(); });
+  });
+  boardEl.addEventListener("pointercancel", () => { drag?.ghost?.remove(); drag = null; render(); });
 
   function tryMove(from, to) {
     const legal = G.moves({ square: from, verbose: true }).filter((m) => m.to === to);
-    if (!legal.length) {
-      const p = G.get(to);
-      S.sel = p && p.color === G.turn() ? to : null;
-      render();
-      return;
-    }
+    if (!legal.length) { const p = G.get(to); S.sel = p && p.color === G.turn() ? to : null; render(); return; }
     if (legal.length > 1 && legal[0].promotion) { askPromotion(from, to); return; }
-    playerMove({ from, to, promotion: legal[0].promotion });
+    submit({ from, to, promotion: legal[0].promotion });
   }
   function askPromotion(from, to) {
     const row = $("promo-row");
@@ -638,16 +807,29 @@ const PUZZLES = /*PUZZLES*/[];
       b.className = "pc " + S.side;
       b.style.transition = "none";
       b.textContent = GLYPH[t] + VS;
-      b.setAttribute("aria-label", { q: "Queen", r: "Rook", b: "Bishop", n: "Knight" }[t]);
-      b.addEventListener("click", () => { $("promo").hidden = true; playerMove({ from, to, promotion: t }); });
+      b.setAttribute("aria-label", NAME[t]);
+      b.addEventListener("click", () => { $("promo").hidden = true; submit({ from, to, promotion: t }); });
       row.appendChild(b);
     }
     $("promo").hidden = false;
   }
+  // Optional blunder-check step before the move is played.
+  function submit(mv) {
+    if (!prog.confirm) return playerMove(mv);
+    const m = G.move(mv); if (!m) return; G.undo();
+    S.pending = mv;
+    S.sel = null;
+    S.marks = { [m.from]: "from", [m.to]: "to" };
+    render();
+    $("confirm-move").textContent = m.san;
+    $("confirm").hidden = false;
+  }
+  $("confirm-yes").addEventListener("click", () => { const mv = S.pending; S.pending = null; $("confirm").hidden = true; S.marks = {}; playerMove(mv); });
+  $("confirm-no").addEventListener("click", () => { S.pending = null; $("confirm").hidden = true; S.marks = {}; render(); });
 
-  // ---------- Game logic ----------
+  // ================= Game logic =================
   function playerMove(mv) {
-    S.sel = null; S.hint = []; S.wrong = null;
+    S.sel = null; S.hint = []; S.wrong = null; S.marks = {};
     const expected = !S.off ? P.line[S.ply] : null;
     const m = G.move(mv);
     if (!m) { render(); return; }
@@ -655,50 +837,46 @@ const PUZZLES = /*PUZZLES*/[];
     S.last = m;
     render(m);
     if (G.in_checkmate()) { S.played.push(m.san); return solved(); }
-    let accepted = false;
-    if (expected && m.san === expected) accepted = true;
-    else if (S.left > 1 && defenceFails(G, S.left - 1)) { accepted = true; S.off = true; }
-    if (!accepted) return wrongMove(m);
+    let ok = false;
+    if (expected && m.san === expected) ok = true;
+    else if (isMatePuzzle(P) && S.left === 2 && defenceFails(G, 1)) { ok = true; S.off = true; }
+    if (!ok) return wrongMove(m);
     S.played.push(m.san);
     S.ply++;
+    if (!S.off && S.ply >= P.line.length) return solved(); // last move of a material-winning line
     S.busy = true;
     setStatus("good", "Good move", "Keep going…");
     setTimeout(() => {
-      let reply;
-      if (!S.off) reply = G.move(P.line[S.ply]);
-      else reply = G.move(stubbornReply(G, S.left - 1));
+      const reply = !S.off ? G.move(P.line[S.ply]) : G.move(stubbornReply(G, S.left - 1));
       S.played.push(reply.san);
-      S.ply++;
-      S.left--;
-      S.last = reply;
-      S.busy = false;
+      S.ply++; S.left--;
+      S.last = reply; S.busy = false;
       (reply.captured ? sfx.capture : sfx.move)();
       render(reply);
       showMoves();
-      setStatus("", "Your move", `${S.side === "w" ? "Black" : "White"} played <b>${reply.san}</b>. Mate in ${S.left}.`);
-      $("mate-badge").textContent = `Mate in ${S.left}`;
-    }, 520);
+      setStatus("", "Your move", `They replied <b>${reply.san}</b>. Run the routine again: checks, captures, threats.`);
+      if (isMatePuzzle(P)) $("goal-badge").textContent = `Mate in ${S.left}`;
+    }, 560);
   }
 
   function wrongMove(m) {
     sfx.bad();
-    S.wrong = m.to;
-    S.busy = true;
+    S.wrong = m.to; S.busy = true;
     const them = S.side === "w" ? "Black" : "White";
-    const why = G.in_check() ? `${m.san} is check, but ${them} has a way out.` : G.in_stalemate() ? `${m.san} is stalemate. That's a draw, not a win.` : `After ${m.san}, ${them} isn't forced into mate.`;
-    setStatus("bad", "Not this one", why + " Try again.");
+    let why;
+    if (G.in_stalemate()) why = `${m.san} is stalemate. That's a draw.`;
+    else if (G.in_check()) why = `${m.san} is check, but ${them} has a good answer.`;
+    else if (m.captured) why = `${m.san} wins something, but there's a stronger move.`;
+    else why = `After ${m.san}, ${them} is fine. Look for something more forcing.`;
+    setStatus("bad", "Not this one", why + " Try again, or open the coach.");
     if (!S.failed) { S.failed = true; record(0); }
     setTimeout(() => {
       G.undo();
-      S.last = S.played.length ? lastMoveObj() : null;
-      S.wrong = null;
-      S.busy = false;
+      const h = G.history({ verbose: true });
+      S.last = h[h.length - 1] || null;
+      S.wrong = null; S.busy = false;
       render();
-    }, 750);
-  }
-  function lastMoveObj() {
-    const h = G.history({ verbose: true });
-    return h[h.length - 1] || null;
+    }, 800);
   }
 
   function solved() {
@@ -706,30 +884,45 @@ const PUZZLES = /*PUZZLES*/[];
     sfx.good();
     let delta = 0;
     if (!S.recorded) delta = record(S.hints ? 0.5 : 1);
-    const title = S.failed ? "Solved on a retry" : S.hints ? "Solved with a hint" : "Checkmate!";
+    const title = S.failed ? "Solved on a retry" : S.hints ? "Solved with a hint" : G.in_checkmate() ? "Checkmate!" : "Correct!";
     const d = S.rated && delta ? ` <span class="delta ${delta > 0 ? "up" : "down"}">${delta > 0 ? "+" : ""}${delta}</span>` : "";
     setStatus("good", title, (P.name ? `<b>${P.name}.</b> ` : "") + P.idea + d);
     showMoves();
+    showLesson();
     finishButtons();
+  }
+
+  const THEME_ORDER = ["Smothered", "Back rank", "Double check", "Fork", "Skewer", "Pin", "Discovered attack", "Promotion", "Sacrifice", "Quiet move", "Hanging piece", "Mate in 1", "Mate in 2"];
+  const themeOf = (p) => THEME_ORDER.find((t) => p.tags.includes(t)) || null;
+  function ideaFor(tag) { return [...TACTICS, ...MATES].find((x) => x.tag === tag) || null; }
+  function showLesson() {
+    const t = themeOf(P);
+    const idea = t && ideaFor(t);
+    if (!idea) { $("lesson").hidden = true; return; }
+    $("lesson-cue").textContent = `${idea.name}: ${idea.cues[0].charAt(0).toLowerCase() + idea.cues[0].slice(1)}.`;
+    $("lesson-link").textContent = `Read about ${idea.name.toLowerCase()} →`;
+    $("lesson-link").onclick = () => openIdea(idea.name);
+    $("lesson").hidden = false;
   }
 
   function finishButtons() {
     $("btn-hint").disabled = true;
     $("btn-solution").disabled = true;
     $("btn-retry").hidden = !S.failed;
-    $("btn-next").textContent = S.rated ? "Next puzzle" : "Back to patterns";
+    $("btn-next").textContent = S.rated || S.backTo === "train" ? "Next puzzle" : "Back";
     $("btn-next").focus({ preventScroll: true });
   }
 
   function showMoves() {
     if (!S.played.length) return;
-    const start = S.side === "w" ? 0 : 1;
-    const num = 1;
-    let txt = "";
-    S.played.forEach((san, i) => {
-      const k = i + start;
-      if (k % 2 === 0) txt += `${num + Math.floor(k / 2)}. ${san} `;
-      else txt += (i === 0 ? `${num}… ` : "") + san + " ";
+    const start = new Chess(P.fen);
+    if (P.setup) start.move(P.setup);
+    let num = +start.fen().split(" ")[5];
+    let white = S.side === "w";
+    let txt = white ? "" : `${num}… `;
+    S.played.forEach((san) => {
+      if (white) txt += `${num}. ${san} `; else { txt += san + " "; num++; }
+      white = !white;
     });
     $("moves").textContent = txt.trim();
     $("moves").hidden = false;
@@ -745,8 +938,8 @@ const PUZZLES = /*PUZZLES*/[];
     prog.rating = Math.max(400, prog.rating + delta);
     prog.seen[P.id] = score;
     if (score === 1) { prog.streak++; prog.best = Math.max(prog.best, prog.streak); } else if (score === 0) prog.streak = 0;
-    prog.history.push({ id: P.id, s: score, r: prog.rating, d: delta, t: Date.now() });
-    if (prog.history.length > 500) prog.history.shift();
+    prog.history.push({ id: P.id, s: score, r: prog.rating, d: delta, t: Date.now(), c: S.used.size });
+    if (prog.history.length > 1000) prog.history.shift();
     persist();
     header();
     return delta;
@@ -754,12 +947,15 @@ const PUZZLES = /*PUZZLES*/[];
 
   function nextKey() {
     if (!S.off) return P.line[S.ply];
-    const k = keyMoves(G, S.left)[0];
-    return k ? k.san : null;
+    for (const m of G.moves({ verbose: true })) {
+      G.move(m);
+      const ok = G.in_checkmate() || (S.left > 1 && !G.game_over() && defenceFails(G, S.left - 1));
+      G.undo();
+      if (ok) return m.san;
+    }
+    return null;
   }
-  function moveFromSan(san) {
-    const m = G.move(san); if (!m) return null; G.undo(); return m;
-  }
+  const moveFromSan = (san) => { const m = G.move(san); if (!m) return null; G.undo(); return m; };
 
   $("btn-hint").addEventListener("click", () => {
     if (!S || S.done || S.busy) return;
@@ -768,7 +964,10 @@ const PUZZLES = /*PUZZLES*/[];
     S.hints++;
     sfx.hint();
     S.hint = S.hints === 1 ? [m.from] : [m.from, m.to];
-    setStatus("", S.hints === 1 ? "Hint" : "Bigger hint", S.hints === 1 ? "Move the highlighted piece." : "Move the highlighted piece to the highlighted square.");
+    const t = themeOf(P);
+    const theme = t && ideaFor(t);
+    setStatus("", S.hints === 1 ? "Hint" : "Bigger hint",
+      S.hints === 1 ? `Move the highlighted piece.${theme ? ` The idea: <b>${theme.name.toLowerCase()}</b>.` : ""}` : "Move the highlighted piece to the highlighted square.");
     if (S.hints >= 2) $("btn-hint").disabled = true;
     render();
   });
@@ -776,96 +975,210 @@ const PUZZLES = /*PUZZLES*/[];
   $("btn-solution").addEventListener("click", async () => {
     if (!S || S.done || S.busy) return;
     if (!S.recorded) record(0);
-    S.failed = true;
-    S.done = true;
-    S.busy = true;
-    S.sel = null; S.hint = [];
-    while (!G.in_checkmate()) {
-      const san = nextKey();
-      if (!san) break;
+    S.failed = true; S.done = true; S.busy = true;
+    S.sel = null; S.hint = []; S.marks = {};
+    $("confirm").hidden = true; S.pending = null;
+    while (S.off ? !G.game_over() : S.ply < P.line.length) {
+      const san = nextKey(); if (!san) break;
       const m = G.move(san);
       S.played.push(m.san); S.ply++; S.last = m;
-      (m.captured ? sfx.capture : sfx.move)();
-      render(m);
-      showMoves();
-      await wait(700);
-      if (G.in_checkmate()) break;
+      (m.captured ? sfx.capture : sfx.move)(); render(m); showMoves();
+      await wait(750);
+      if (G.game_over() || (!S.off && S.ply >= P.line.length)) break;
       const reply = !S.off ? G.move(P.line[S.ply]) : G.move(stubbornReply(G, S.left - 1));
       if (!reply) break;
       S.played.push(reply.san); S.ply++; S.left--; S.last = reply;
-      (reply.captured ? sfx.capture : sfx.move)();
-      render(reply);
-      showMoves();
-      await wait(700);
+      (reply.captured ? sfx.capture : sfx.move)(); render(reply); showMoves();
+      await wait(750);
     }
     S.busy = false;
     setStatus("bad", "Here's the solution", (P.name ? `<b>${P.name}.</b> ` : "") + P.idea);
+    showLesson();
     finishButtons();
   });
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
-  $("btn-retry").addEventListener("click", () => { const rated = S.rated; startPuzzle(P, false); S.rated = false; S.recorded = true; if (rated) $("btn-next").textContent = "Next puzzle"; S.backTo = rated ? "train" : "patterns"; });
+  $("btn-retry").addEventListener("click", () => {
+    const back = S.rated ? "train" : S.backTo;
+    startPuzzle(P, false);
+    S.backTo = back;
+    $("btn-next").textContent = back === "train" ? "Next puzzle" : "Back";
+  });
 
   $("btn-next").addEventListener("click", () => {
     unlock();
     if (S && !S.done && S.rated && !S.recorded) record(0); // skipping counts as a miss
-    if (S && (S.backTo === "patterns" || (!S.rated && !S.backTo))) { show("patterns"); return; }
+    if (S && !S.rated && S.backTo === "learn") { show("learn"); learnSection("mates"); return; }
     startPuzzle(pick());
   });
 
+  // ================= Coach =================
+  function coachSay(html, marks) {
+    S.marks = marks || {};
+    render();
+    $("coach-out").innerHTML = html;
+    $("coach-out").hidden = false;
+  }
+  function markStep(name) {
+    S.used.add(name);
+    document.querySelector(`.step[data-step="${name}"]`)?.classList.add("done");
+  }
+  const TOOLS = {
+    last() {
+      const h = G.history({ verbose: true });
+      const lm = h[h.length - 1];
+      if (!lm || lm.color === S.side) return coachSay("There's no opponent move to look at in this position. Start with checks.");
+      describeMove(lm);
+    },
+    checks() {
+      const ms = G.moves({ verbose: true }).filter((m) => /[+#]/.test(m.san));
+      const marks = {};
+      ms.forEach((m) => { marks[m.from] = "from"; marks[m.to] = "to"; });
+      coachSay(ms.length ? `<b>${ms.length} check${ms.length > 1 ? "s" : ""}:</b> ${ms.map((m) => m.san).join(", ")}. For each, where can the king go, and can the checking piece be taken or blocked?` : "<b>No checks.</b> Move on to captures.", marks);
+    },
+    captures() {
+      const ms = G.moves({ verbose: true }).filter((m) => m.captured);
+      const opp = S.side === "w" ? "b" : "w";
+      const marks = {};
+      const parts = ms.map((m) => {
+        const free = attackersOf(G, m.to, opp).length === 0;
+        marks[m.to] = free ? "free" : "to";
+        return free ? `<b>${m.san}</b> (undefended)` : m.san;
+      });
+      coachSay(ms.length ? `<b>${ms.length} capture${ms.length > 1 ? "s" : ""}:</b> ${parts.join(", ")}. For defended pieces, count attackers and defenders and compare values.` : "<b>No captures.</b> Look for threats.", marks);
+    },
+    threats() {
+      const opp = S.side === "w" ? "b" : "w";
+      const found = [];
+      for (const m of G.moves({ verbose: true })) {
+        if (m.captured || /[+#]/.test(m.san)) continue;
+        G.move(m);
+        // A real threat: hits something bigger, or something loose from a safe square.
+        const safe = attackersOf(G, m.to, opp).length === 0;
+        const hits = attacksFrom(G, m.to).filter((s) => {
+          const t = G.get(s);
+          return t && t.color === opp && t.type !== "k" && (VAL[t.type] > VAL[m.piece] || (safe && attackersOf(G, s, opp).length === 0));
+        });
+        const names = hits.map((s) => NAME[G.get(s).type]);
+        const score = hits.reduce((a, s) => a + VAL[G.get(s).type], 0) + (hits.length > 1 ? 10 : 0);
+        G.undo();
+        if (hits.length) found.push({ m, names, score });
+      }
+      found.sort((a, b) => b.score - a.score);
+      const top = found.slice(0, 5);
+      const marks = {};
+      top.forEach(({ m }) => { marks[m.from] = "from"; marks[m.to] = "to"; });
+      coachSay(top.length ? `<b>Threats:</b> ${top.map(({ m, names }) => `${m.san} attacks the ${listText(names)}${names.length > 1 ? " (double attack)" : ""}`).join("; ")}. Can they answer every threat?` : "<b>No direct threats on loose or bigger pieces.</b> Look for quiet moves that take squares from their king.", marks);
+    },
+    loose() {
+      const opp = S.side === "w" ? "b" : "w";
+      const theirs = looseOf(G, opp), mine = looseOf(G, S.side);
+      const marks = {};
+      theirs.forEach(([s]) => { marks[s] = "free"; });
+      mine.forEach(([s]) => { marks[s] = "to"; });
+      const k = findKing(opp);
+      const flights = attacksFrom(G, k).filter((s) => { const t = G.get(s); return (!t || t.color === S.side) && attackersOf(G, s, S.side).length === 0; });
+      flights.forEach((s) => { if (!marks[s]) marks[s] = "from"; });
+      coachSay(`<b>Their undefended pieces</b> (red): ${theirs.length ? theirs.map(([s, p]) => `${NAME[p.type]} ${s}`).join(", ") : "none"}. <b>Yours:</b> ${mine.length ? mine.map(([s, p]) => `${NAME[p.type]} ${s}`).join(", ") : "none"}. <b>Their king's free squares:</b> ${flights.length ? flights.join(", ") : "none, so look hard at checks"}.`, marks);
+    },
+    calc() {
+      coachSay("Pick your 2–3 best candidates from the lists above. For each one ask: <b>what's their most forcing reply?</b> Checks and captures first. Then find your answer. Stop when nothing is hanging and count the material. Turn on <b>Blunder check</b> in Progress → Settings to practise this before every move.");
+    },
+  };
+  function describeMove(m) {
+    // Rebuild the position before that move from the puzzle start.
+    const g0 = new Chess(P.fen);
+    const hist = G.history();
+    for (let i = 0; i < hist.length - 1; i++) g0.move(hist[i]);
+    const mover = m.color;
+    const nowAttacks = attacksFrom(G, m.to).filter((s) => { const t = G.get(s); return t && t.color !== mover; });
+    const lostGuard = piecesOf(G, mover).filter(([s, p]) => p.type !== "k" && s !== m.to && attackersOf(g0, s, mover).length > 0 && attackersOf(G, s, mover).length === 0);
+    const marks = { [m.from]: "from", [m.to]: "to" };
+    nowAttacks.forEach((s) => { marks[s] = "to"; });
+    lostGuard.forEach(([s]) => { marks[s] = "free"; });
+    let html = `<b>${m.san}</b> moved their ${NAME[m.piece]} from ${m.from} to ${m.to}. `;
+    html += nowAttacks.length ? `It now attacks your ${listText(nowAttacks.map((s) => pieceAt(G, s)))}. ` : "It doesn't attack any of your pieces directly. ";
+    html += lostGuard.length ? `<b>It left undefended:</b> ${listText(lostGuard.map(([s, p]) => `the ${NAME[p.type]} on ${s}`))}.` : "Nothing of theirs became undefended. Look at their king and your checks next.";
+    coachSay(html, marks);
+  }
+  document.querySelectorAll("[data-tool]").forEach((b) => b.addEventListener("click", () => {
+    if (!S || S.busy || S.done) return;
+    TOOLS[b.dataset.tool]();
+    markStep(b.dataset.tool);
+  }));
+
+  // ================= Picking puzzles =================
   function pick() {
-    const target = prog.rating + (Math.random() * 240 - 120);
-    const fresh = PUZZLES.filter((p) => !(p.id in prog.seen) && p.id !== P?.id);
-    const pool = fresh.length ? fresh : PUZZLES.filter((p) => prog.seen[p.id] < 1 && p.id !== P?.id);
-    const list = pool.length ? pool : PUZZLES.filter((p) => p.id !== P?.id);
+    const pool = PUZZLES.filter((p) => p.id !== P?.id && !p.name && (!prog.focus || p.tags.includes(prog.focus)));
+    const base = pool.length ? pool : PUZZLES.filter((p) => p.id !== P?.id && !p.name);
+    const fresh = base.filter((p) => !(p.id in prog.seen));
+    const retry = base.filter((p) => prog.seen[p.id] < 1);
+    const list = fresh.length ? fresh : retry.length ? retry : base;
+    const target = prog.rating + (Math.random() * 200 - 100);
     let best = list[0], bd = Infinity;
-    for (const p of list) { const d = Math.abs(p.rating - target) + Math.random() * 40; if (d < bd) { bd = d; best = p; } }
+    for (const p of list) { const d = Math.abs(p.rating - target) + Math.random() * 30; if (d < bd) { bd = d; best = p; } }
     return best;
   }
-
-  // ---------- Header, tabs ----------
-  function header() {
-    $("rating").textContent = prog.rating;
-    $("streak").textContent = prog.streak;
+  function practise(tag) {
+    prog.focus = tag; persist();
+    show("train");
+    startPuzzle(pick());
   }
-  function show(v) {
-    if (v === "train-direct") {
-      // Show the board without picking a new rated puzzle.
-      view = "train";
-      for (const t of ["train", "patterns", "stats"]) { $("view-" + t).hidden = t !== "train"; $("tab-" + t).setAttribute("aria-selected", String(t === "train")); }
-      window.scrollTo({ top: 0 });
-      return;
+  $("focus-clear").addEventListener("click", () => { prog.focus = null; persist(); $("focus-bar").hidden = true; });
+
+  // ================= Learn =================
+  function countFor(tag) {
+    const all = PUZZLES.filter((p) => p.tags.includes(tag) && !p.name);
+    return `${all.filter((p) => prog.seen[p.id] === 1).length}/${all.length} solved`;
+  }
+  function ideaCard(idea, practice) {
+    const d = document.createElement("details");
+    d.className = "idea-card";
+    d.dataset.name = idea.name;
+    const canPractise = practice && idea.tag && PUZZLES.some((p) => p.tags.includes(idea.tag) && !p.name);
+    d.innerHTML = `<summary><b></b><span></span>${canPractise ? "<em></em>" : ""}</summary>
+      <div class="idea-body"><p style="margin:0"></p><div><h4>Signs to look for</h4><ul class="cues"></ul></div><div><h4>How to apply it</h4><ol class="apply"></ol></div></div>`;
+    d.querySelector("summary b").textContent = idea.name;
+    d.querySelector("summary span").textContent = idea.short;
+    if (canPractise) d.querySelector("summary em").textContent = countFor(idea.tag);
+    d.querySelector(".idea-body p").textContent = idea.what;
+    for (const c of idea.cues) { const li = document.createElement("li"); li.textContent = c; d.querySelector(".cues").appendChild(li); }
+    for (const c of idea.apply) { const li = document.createElement("li"); li.textContent = c; d.querySelector(".apply").appendChild(li); }
+    if (canPractise) {
+      const b = document.createElement("button");
+      b.className = "btn primary small"; b.type = "button"; b.style.justifySelf = "start";
+      b.textContent = `Practise ${idea.name.toLowerCase()}`;
+      b.addEventListener("click", () => practise(idea.tag));
+      d.querySelector(".idea-body").appendChild(b);
     }
-    view = v;
-    for (const t of ["train", "patterns", "stats"]) {
-      $("view-" + t).hidden = t !== v;
-      $("tab-" + t).setAttribute("aria-selected", String(t === v));
-    }
-    if (v === "patterns") renderPatterns();
-    if (v === "stats") renderStats();
-    if (v === "train" && (!S || !S.rated)) startPuzzle(pick());
+    return d;
   }
-  $("tab-train").addEventListener("click", () => show("train"));
-  $("tab-patterns").addEventListener("click", () => show("patterns"));
-  $("tab-stats").addEventListener("click", () => show("stats"));
-
-  function syncSound() {
-    $("sound").setAttribute("aria-pressed", String(prog.sound));
-    $("sound").setAttribute("aria-label", prog.sound ? "Sound on" : "Sound off");
-    $("sound-icon").setAttribute("d", prog.sound
-      ? "M2 6h3l4-3v10l-4-3H2zM11 5.5c1 .7 1.5 1.5 1.5 2.5s-.5 1.8-1.5 2.5l-.8-.9c.6-.5.9-1 .9-1.6s-.3-1.1-.9-1.6z"
-      : "M2 6h3l4-3v10l-4-3H2zM10.5 5.5l1-1 1.5 1.5 1.5-1.5 1 1L14 7l1.5 1.5-1 1L13 8l-1.5 1.5-1-1L12 7z");
+  function renderLearn() {
+    const fill = (id, list, practice) => { const box = $(id); box.textContent = ""; list.forEach((x) => box.appendChild(ideaCard(x, practice))); };
+    fill("tactics-list", TACTICS, true);
+    fill("mates-list", MATES, true);
+    fill("strategy-list", STRATEGY, false);
+    renderPatterns();
   }
-  $("sound").addEventListener("click", () => { unlock(); prog.sound = !prog.sound; syncSound(); persist(); });
+  function learnSection(sec) {
+    document.querySelectorAll("[data-sec]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.sec === sec)));
+    for (const s of ["method", "tactics", "mates", "strategy"]) $("sec-" + s).hidden = s !== sec;
+  }
+  document.querySelectorAll("[data-sec]").forEach((b) => b.addEventListener("click", () => learnSection(b.dataset.sec)));
+  function openIdea(name) {
+    show("learn");
+    learnSection(TACTICS.some((x) => x.name === name) ? "tactics" : "mates");
+    const card = [...document.querySelectorAll("details.idea-card")].find((d) => d.dataset.name === name);
+    if (card) { card.open = true; card.scrollIntoView({ block: "start" }); }
+  }
+  $("practice-method").addEventListener("click", () => { prog.coach = true; persist(); syncSettings(); show("train"); $("coach").open = true; });
 
-  // ---------- Patterns ----------
   function miniBoard(fen) {
     const c = new Chess(fen);
     const b = document.createElement("div");
     b.className = "board";
-    const orient = c.turn();
-    squaresInOrder(orient).forEach((sq) => {
-      const f = FILES.indexOf(sq[0]), r = +sq[1] - 1;
+    squaresInOrder(c.turn()).forEach((sq) => {
+      const [f, r] = fr(sq);
       const d = document.createElement("div");
       d.className = "sq " + ((f + r) % 2 ? "l" : "d");
       const p = c.get(sq);
@@ -879,60 +1192,113 @@ const PUZZLES = /*PUZZLES*/[];
     grid.textContent = "";
     for (const p of PUZZLES.filter((x) => x.name)) {
       const b = document.createElement("button");
-      b.type = "button";
-      b.className = "pat";
+      b.type = "button"; b.className = "pat";
       b.appendChild(miniBoard(p.fen));
       const s = document.createElement("strong"); s.textContent = p.name; b.appendChild(s);
-      const n = Math.ceil(p.line.length / 2);
       const meta = document.createElement("span");
-      meta.innerHTML = `Mate in ${n}` + (prog.seen[p.id] === 1 ? ' · <span class="done">Solved</span>' : "");
+      meta.innerHTML = `Mate in ${Math.ceil(p.line.length / 2)}` + (prog.seen[p.id] === 1 ? ' · <span class="done">Solved</span>' : "");
       b.appendChild(meta);
-      b.addEventListener("click", () => { unlock(); show("train-direct"); startPuzzle(p, false); S.backTo = "patterns"; });
+      b.addEventListener("click", () => { unlock(); showTrainOnly(); startPuzzle(p, false); S.backTo = "learn"; });
       grid.appendChild(b);
     }
   }
 
-  // ---------- Stats ----------
+  // ================= Tabs =================
+  function showTrainOnly() {
+    view = "train";
+    for (const t of ["train", "learn", "stats"]) { $("view-" + t).hidden = t !== "train"; $("tab-" + t).setAttribute("aria-selected", String(t === "train")); }
+    window.scrollTo({ top: 0 });
+  }
+  function show(v) {
+    const wasTrain = view === "train";
+    view = v;
+    for (const t of ["train", "learn", "stats"]) { $("view-" + t).hidden = t !== v; $("tab-" + t).setAttribute("aria-selected", String(t === v)); }
+    if (v === "learn") renderLearn();
+    if (v === "stats") renderStats();
+    if (v === "train" && !wasTrain && S && !S.rated && S.backTo !== "train") startPuzzle(pick());
+    window.scrollTo({ top: 0 });
+  }
+  $("tab-train").addEventListener("click", () => show("train"));
+  $("tab-learn").addEventListener("click", () => show("learn"));
+  $("tab-stats").addEventListener("click", () => show("stats"));
+
+  function header() { $("rating").textContent = prog.rating; $("streak").textContent = prog.streak; }
+  function syncSound() {
+    $("sound").setAttribute("aria-pressed", String(prog.sound));
+    $("sound").setAttribute("aria-label", prog.sound ? "Sound on" : "Sound off");
+    $("sound-icon").setAttribute("d", prog.sound
+      ? "M2 6h3l4-3v10l-4-3H2zM11 5.5c1 .7 1.5 1.5 1.5 2.5s-.5 1.8-1.5 2.5l-.8-.9c.6-.5.9-1 .9-1.6s-.3-1.1-.9-1.6z"
+      : "M2 6h3l4-3v10l-4-3H2zM10.5 5.5l1-1 1.5 1.5 1.5-1.5 1 1L14 7l1.5 1.5-1 1L13 8l-1.5 1.5-1-1L12 7z");
+  }
+  $("sound").addEventListener("click", () => { unlock(); prog.sound = !prog.sound; syncSound(); persist(); });
+
+  // ================= Progress =================
+  const THEMES = ["Hanging piece", "Fork", "Pin", "Skewer", "Discovered attack", "Double check", "Sacrifice", "Promotion", "Quiet move", "Back rank", "Smothered", "Mate in 1", "Mate in 2", "Mate in 3"];
+  function themeStats() {
+    const out = {};
+    for (const x of prog.history) {
+      const p = BY_ID[x.id]; if (!p) continue;
+      for (const t of p.tags) { if (!THEMES.includes(t)) continue; (out[t] ||= { n: 0, ok: 0 }); out[t].n++; if (x.s === 1) out[t].ok++; }
+    }
+    return out;
+  }
+  const themeLabel = (t) => ideaFor(t)?.name || t;
   function renderStats() {
     const h = prog.history;
     $("st-rating").textContent = prog.rating;
-    const first = h.length ? h[0].r - h[0].d : 1000;
+    const first = h.length ? h[0].r - h[0].d : prog.rating;
     const ch = prog.rating - first;
     $("st-change").textContent = h.length ? `${ch >= 0 ? "+" : ""}${ch} since your first puzzle` : "Solve a few puzzles to see your progress";
-    const solved = h.filter((x) => x.s > 0).length;
-    $("t-solved").textContent = solved;
+    $("t-solved").textContent = h.filter((x) => x.s > 0).length;
     $("t-acc").textContent = h.length ? Math.round((h.filter((x) => x.s === 1).length / h.length) * 100) + "%" : "–";
     $("t-streak").textContent = prog.streak;
     $("t-best").textContent = prog.best;
 
-    // Rating history line.
     const svg = $("spark");
-    const pts = [first, ...h.map((x) => x.r)].slice(-60);
+    const pts = [first, ...h.map((x) => x.r)].slice(-80);
     const lo = Math.min(...pts) - 20, hi = Math.max(...pts) + 20;
-    const X = (i) => 28 + (i / Math.max(1, pts.length - 1)) * 286, Y = (v) => 8 + (1 - (v - lo) / (hi - lo)) * 70;
+    const X = (i) => 34 + (i / Math.max(1, pts.length - 1)) * 280, Y = (v) => 8 + (1 - (v - lo) / (hi - lo)) * 70;
     const path = pts.map((v, i) => `${i ? "L" : "M"}${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join("");
     const mid = Math.round((lo + hi) / 2 / 10) * 10;
-    svg.innerHTML = `
-      <line class="gl" x1="28" x2="314" y1="${Y(mid)}" y2="${Y(mid)}"/>
-      <text x="0" y="${Y(mid) + 3}">${mid}</text>
+    svg.innerHTML = `<line class="gl" x1="34" x2="314" y1="${Y(mid)}" y2="${Y(mid)}"/><text x="0" y="${Y(mid) + 3}">${mid}</text>
       ${pts.length > 1 ? `<path class="area" d="${path}L${X(pts.length - 1)},78L${X(0)},78Z"/><path class="ln" d="${path}"/>` : ""}
       <circle class="pt" cx="${X(pts.length - 1)}" cy="${Y(pts[pts.length - 1])}" r="3.5"/>`;
 
-    const themes = ["Mate in 1", "Mate in 2", "Back rank", "Smothered", "Sacrifice", "Quiet move", "Knight mate", "Queen mate", "Rook mate"];
+    // Work on next: weakest themes with enough attempts, then themes not tried yet.
+    const ts = themeStats();
+    const focus = $("focus-list");
+    focus.textContent = "";
+    const weak = Object.entries(ts).filter(([, v]) => v.n >= 3 && v.ok / v.n < 0.85).map(([t, v]) => [t, v.ok / v.n, v.n]).sort((a, b) => a[1] - b[1]).slice(0, 3);
+    const untried = THEMES.filter((t) => !ts[t] && PUZZLES.some((p) => p.tags.includes(t) && !p.name)).slice(0, Math.max(0, 3 - weak.length));
+    const items = [...weak.map(([t, r, n]) => [t, `${Math.round(r * 100)}% of ${n} solved cleanly`]), ...untried.map((t) => [t, "Not tried yet"])];
+    if (!items.length) focus.innerHTML = '<p class="empty">Nothing stands out. Keep training on mixed puzzles.</p>';
+    for (const [t, note] of items) {
+      const row = document.createElement("div");
+      row.className = "focus-item";
+      row.innerHTML = "<span><b></b><small></small></span>";
+      row.querySelector("b").textContent = themeLabel(t);
+      row.querySelector("small").textContent = note;
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "btn small"; b.textContent = "Practise";
+      b.addEventListener("click", () => practise(t));
+      row.appendChild(b);
+      focus.appendChild(row);
+    }
+
     const box = $("themes");
     box.textContent = "";
     let any = false;
-    for (const t of themes) {
-      const rows = h.filter((x) => BY_ID[x.id]?.tags.includes(t));
-      if (!rows.length) continue;
+    for (const t of THEMES) {
+      const v = ts[t]; if (!v) continue;
       any = true;
-      const pct = Math.round((rows.filter((x) => x.s === 1).length / rows.length) * 100);
+      const pct = Math.round((v.ok / v.n) * 100);
       const row = document.createElement("div");
       row.className = "theme";
-      row.innerHTML = `<span>${t}</span><span class="bar"><i style="width:${pct}%"></i></span><output>${pct}%</output>`;
+      row.innerHTML = `<span></span><span class="bar"><i style="width:${pct}%"></i></span><output>${pct}% · ${v.n}</output>`;
+      row.firstChild.textContent = themeLabel(t);
       box.appendChild(row);
     }
-    if (!any) box.innerHTML = '<p class="empty">Your accuracy by theme shows up here once you have solved some puzzles.</p>';
+    if (!any) box.innerHTML = '<p class="empty">Accuracy by theme shows up here once you have solved some puzzles.</p>';
 
     const rec = $("recent");
     rec.textContent = "";
@@ -942,28 +1308,79 @@ const PUZZLES = /*PUZZLES*/[];
       const p = BY_ID[x.id];
       const row = document.createElement("div");
       const cls = x.s === 1 ? "ok" : x.s > 0 ? "half" : "no";
-      row.innerHTML = `<span class="pill ${cls}">${x.s === 1 ? "Solved" : x.s > 0 ? "Hint" : "Missed"}</span><span>${p?.name || (p ? p.tags.find((t) => t.startsWith("Mate in")) : "Puzzle")}${p ? ` · ${p.rating}` : ""}</span><span class="r ${x.d >= 0 ? "delta up" : "delta down"}">${x.d >= 0 ? "+" : ""}${x.d}</span>`;
+      const t = p && themeOf(p);
+      row.innerHTML = `<span class="pill ${cls}">${x.s === 1 ? "Solved" : x.s > 0 ? "Hint" : "Missed"}</span><span>${p ? (t ? themeLabel(t) : "Puzzle") + " · " + p.rating : "Puzzle"}</span><span class="r delta ${x.d >= 0 ? "up" : "down"}">${x.d >= 0 ? "+" : ""}${x.d}</span>`;
       rec.appendChild(row);
     }
+    syncSettings();
   }
-
-  $("btn-reset").addEventListener("click", () => { $("reset-confirm").hidden = false; });
+  function syncSettings() {
+    $("set-rating").value = prog.rating;
+    $("set-coach").checked = prog.coach;
+    $("set-confirm").checked = prog.confirm;
+  }
+  $("set-rating-save").addEventListener("click", () => {
+    const v = Math.round(+$("set-rating").value);
+    if (!(v >= 400 && v <= 2800)) { $("set-rating").value = prog.rating; return; }
+    prog.rating = v; persist(); header(); renderStats();
+  });
+  $("set-coach").addEventListener("change", (e) => { prog.coach = e.target.checked; persist(); });
+  $("set-confirm").addEventListener("change", (e) => { prog.confirm = e.target.checked; persist(); });
+  $("btn-reset").addEventListener("click", () => { $("btn-reset-yes").hidden = false; });
   $("btn-reset-yes").addEventListener("click", () => {
-    prog = { rating: 1000, history: [], seen: {}, streak: 0, best: 0, sound: prog.sound };
-    persist(); header(); renderStats(); $("reset-confirm").hidden = true;
+    prog = { ...prog, history: [], seen: {}, streak: 0, best: 0, focus: null, setup: false };
+    persist(); $("btn-reset-yes").hidden = true; onboarding();
   });
 
-  // ---------- Boot ----------
+  // ================= Onboarding =================
+  const LEVELS = [
+    [600, "New to chess", "I know how the pieces move"],
+    [900, "Casual player", "I play now and then"],
+    [1200, "Improving", "I know basic tactics like forks"],
+    [1500, "Club player", "I play regularly and study a bit"],
+    [1800, "Strong club player", "I calculate several moves ahead"],
+  ];
+  let obRating = 900;
+  function onboarding() {
+    const box = $("levels");
+    box.textContent = "";
+    for (const [r, name, note] of LEVELS) {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "level";
+      b.setAttribute("aria-pressed", String(r === obRating));
+      b.innerHTML = "<span><b></b><small></small></span><em></em>";
+      b.querySelector("b").textContent = name;
+      b.querySelector("small").textContent = note;
+      b.querySelector("em").textContent = "~" + r;
+      b.addEventListener("click", () => { obRating = r; $("own-rating").value = ""; box.querySelectorAll(".level").forEach((x) => x.setAttribute("aria-pressed", String(x === b))); });
+      box.appendChild(b);
+    }
+    $("onboard").hidden = false;
+  }
+  $("own-rating").addEventListener("input", (e) => {
+    const v = +e.target.value;
+    if (v >= 400 && v <= 2800) { obRating = Math.round(v); $("levels").querySelectorAll(".level").forEach((x) => x.setAttribute("aria-pressed", "false")); }
+  });
+  $("ob-start").addEventListener("click", () => {
+    unlock();
+    prog.rating = obRating; prog.setup = true; prog.coach = $("ob-coach").checked;
+    persist(); header();
+    $("onboard").hidden = true;
+    show("train");
+    startPuzzle(pick());
+  });
+
+  // ================= Boot =================
   function boot(data) {
     if (typeof Chess === "undefined") {
       setStatus("bad", "Couldn't load the chess engine", "Check your internet connection and reload the page.");
       return;
     }
-    header();
-    syncSound();
+    header(); syncSound(); syncSettings();
     const p = data?.puzzle && BY_ID[data.puzzle];
-    if (data?.view && data.view !== "train") show(data.view);
     startPuzzle(p || pick());
+    if (data?.view && data.view !== "train") show(data.view);
+    if (!prog.setup) onboarding();
   }
   window.claude?.hot?.snapshot?.(() => ({ view, puzzle: P?.id }));
   window.claude?.hot?.ready ? window.claude.hot.ready(boot) : boot(window.claude?.hot?.data ?? {});

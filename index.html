@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Games">
+<title>Games</title>
+<style>
+/* Layout: a single column of game cards, each with its own colour swatch. */
+:root {
+  --bg: #f1f2ef;
+  --card: #ffffff;
+  --fg: #1a1d1b;
+  --muted: #5f665f;
+  --line: #dcdfd8;
+  --display: "Avenir Next", "Helvetica Neue", Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #121412; --card: #1b1e1b; --fg: #e8ebe6; --muted: #9aa39a; --line: #2b302b; color-scheme: dark; }
+}
+html { box-sizing: border-box; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--display); }
+main {
+  box-sizing: border-box;
+  max-width: 560px;
+  margin: 0 auto;
+  padding-block: 28px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid;
+  gap: 12px;
+}
+h1 { margin: 0 0 4px; font-size: 2rem; letter-spacing: -.02em; }
+p.lead { margin: 0 0 8px; color: var(--muted); line-height: 1.45; }
+a.game {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  gap: 14px;
+  align-items: center;
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  color: inherit;
+  text-decoration: none;
+}
+a.game:focus-visible { outline: 3px solid #f2c14e; outline-offset: 2px; }
+a.game img { width: 56px; height: 56px; border-radius: 13px; display: block; }
+a.game b { display: block; font-size: 1.08rem; }
+a.game span { color: var(--muted); font-size: .92rem; line-height: 1.35; }
+.tip { margin-top: 8px; font-size: .88rem; color: var(--muted); line-height: 1.45; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Games</h1>
+  <p class="lead">Built for iPhone. Open one in Safari, then tap Share → Add to Home Screen to play it full screen.</p>
+  <a class="game" href="mating-net/"><img src="mating-net/icon-180.png" alt=""><div><b>Mating Net</b><span>Chess tactics trainer with a thinking coach and puzzles at your rating.</span></div></a>
+  <a class="game" href="mossblade/"><img src="mossblade/icon-180.png" alt=""><div><b>Mossblade</b><span>Top-down pixel adventure with a dungeon and a boss.</span></div></a>
+  <a class="game" href="hype-cycle/"><img src="hype-cycle/icon-180.png" alt=""><div><b>Hype Cycle</b><span>Breakout in an AI startup. Pump the valuation.</span></div></a>
+  <a class="game" href="brick-press/"><img src="brick-press/icon-180.png" alt=""><div><b>Brick Press</b><span>Breakout printed in risograph inks.</span></div></a>
+  <a class="game" href="doubles/"><img src="doubles/icon-180.png" alt=""><div><b>Doubles</b><span>Slide and merge tiles to reach 2048.</span></div></a>
+  <p class="tip">Each game saves your progress on this device.</p>
+</main>
+</body>
+</html>
