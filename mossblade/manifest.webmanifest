@@ -1,0 +1,10 @@
+{
+  "name": "Mossblade",
+  "short_name": "Mossblade",
+  "start_url": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#141c17",
+  "theme_color": "#141c17",
+  "icons": [{ "src": "icon-180.png", "sizes": "180x180", "type": "image/png" }]
+}

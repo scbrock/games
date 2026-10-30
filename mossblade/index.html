@@ -1,0 +1,1465 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mossblade">
+<meta name="theme-color" content="#141c17">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="manifest" href="manifest.webmanifest">
+<style>
+  /* Standalone only: keep clear of the notch and home bar. */
+  html { box-sizing: border-box; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+</style>
+<!-- ARTIFACT-START -->
+<title>Mossblade</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600;700&family=Silkscreen&display=swap">
+<style>
+/* Layout: a handheld console. Title bar, the pixel screen scaled to fit,
+   then a thumb pad on the left and A/B buttons on the right.
+   Deliberately single-theme: a dark moss shell in either OS theme. */
+:root {
+  --shell: #141c17;
+  --shell-hi: #1f2b23;
+  --line: #2e3d33;
+  --fg: #e9efe6;
+  --muted: #8fa596;
+  --moss: #38b764;
+  --a: #b13e53;
+  --b: #ef7d57;
+  --ink: #1a1c2c;
+  --paper: #f4f4f4;
+  color-scheme: dark;
+
+  --pixel: "Pixelify Sans", "Trebuchet MS", system-ui, sans-serif;
+  --label: Silkscreen, "Courier New", ui-monospace, monospace;
+}
+html, body { height: 100%; }
+[hidden] { display: none !important; }
+body {
+  margin: 0;
+  background: var(--shell);
+  color: var(--fg);
+  font-family: var(--pixel);
+  font-size: 16px;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+.app {
+  box-sizing: border-box;
+  height: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  padding-block: 8px 12px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.bar { display: flex; align-items: center; gap: 8px; }
+.bar h1 {
+  margin: 0 auto 0 0;
+  font-family: var(--label);
+  font-weight: 400;
+  font-size: .95rem;
+  letter-spacing: .12em;
+  color: var(--moss);
+}
+.chip {
+  font: inherit;
+  font-family: var(--label);
+  font-size: .62rem;
+  letter-spacing: .06em;
+  padding: 7px 9px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: var(--shell-hi);
+  color: var(--muted);
+  cursor: pointer;
+}
+.chip[aria-pressed="true"] { color: var(--fg); border-color: var(--moss); }
+.chip:focus-visible, button:focus-visible { outline: 2px solid var(--moss); outline-offset: 2px; }
+
+.screen {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+.frame { position: relative; max-width: 100%; }
+canvas {
+  display: block;
+  max-width: 100%;
+  image-rendering: pixelated;
+  border-radius: 4px;
+  box-shadow: 0 0 0 3px var(--ink), 0 0 0 5px var(--line);
+}
+.area {
+  position: absolute;
+  left: 0; right: 0; top: 16%;
+  text-align: center;
+  font-family: var(--pixel);
+  font-weight: 700;
+  font-size: clamp(1rem, 5vw, 1.4rem);
+  color: var(--paper);
+  text-shadow: 2px 2px 0 var(--ink);
+  pointer-events: none;
+  animation: area 2200ms ease-out both;
+}
+@keyframes area { 0% { opacity: 0; transform: translateY(6px); } 15%, 75% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+
+.dialog {
+  position: absolute;
+  left: 4%; right: 4%; bottom: 4%;
+  padding: 10px 12px 12px;
+  background: var(--ink);
+  border: 3px solid var(--paper);
+  border-radius: 4px;
+  font-size: clamp(.92rem, 4.2vw, 1.08rem);
+  line-height: 1.35;
+  color: var(--paper);
+  min-height: 3.4em;
+  cursor: pointer;
+}
+.dialog b { color: #ffcd75; font-weight: 600; }
+.dialog .more {
+  position: absolute;
+  right: 8px; bottom: 4px;
+  font-size: .8rem;
+  color: #ffcd75;
+  animation: blink 900ms steps(2) infinite;
+}
+@keyframes blink { 50% { opacity: 0; } }
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 14px;
+  padding: 20px;
+  text-align: center;
+  background: rgba(20, 28, 23, .93);
+  border-radius: 4px;
+}
+.overlay .kicker { margin: 0; font-family: var(--label); font-size: .7rem; letter-spacing: .14em; color: var(--muted); }
+.overlay h2 {
+  margin: 0;
+  font-family: var(--pixel);
+  font-weight: 700;
+  font-size: clamp(2.2rem, 12vw, 3.2rem);
+  line-height: .95;
+  color: var(--moss);
+  text-shadow: 3px 3px 0 var(--ink);
+  text-wrap: balance;
+}
+.overlay p.body { margin: 0; max-width: 30ch; line-height: 1.45; color: var(--fg); }
+.overlay p.body b { color: #ffcd75; font-weight: 600; }
+.overlay .row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.overlay .hint { margin: 0; font-family: var(--label); font-size: .6rem; line-height: 1.8; color: var(--muted); max-width: 34ch; }
+.btn {
+  font: inherit;
+  font-family: var(--label);
+  font-size: .8rem;
+  letter-spacing: .06em;
+  padding: 12px 18px;
+  border-radius: 8px;
+  border: 0;
+  background: var(--moss);
+  color: var(--ink);
+  box-shadow: 0 4px 0 #257179;
+  cursor: pointer;
+}
+.btn.alt { background: var(--shell-hi); color: var(--fg); box-shadow: 0 4px 0 var(--line); }
+.btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #257179; }
+
+.controls {
+  flex-shrink: 0;
+  height: clamp(150px, 26vh, 200px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  touch-action: none;
+}
+.pad {
+  position: relative;
+  width: clamp(124px, 36vw, 156px);
+  aspect-ratio: 1;
+  max-width: 100%;
+  border-radius: 50%;
+  background: var(--shell-hi);
+  box-shadow: inset 0 0 0 2px var(--line), inset 0 6px 14px rgba(0, 0, 0, .35);
+  touch-action: none;
+}
+.pad::before, .pad::after {
+  content: "";
+  position: absolute;
+  left: 50%; top: 50%;
+  background: var(--line);
+  border-radius: 3px;
+  transform: translate(-50%, -50%);
+}
+.pad::before { width: 62%; height: 16%; }
+.pad::after { width: 16%; height: 62%; }
+.knob {
+  position: absolute;
+  left: 50%; top: 50%;
+  width: 38%; height: 38%;
+  margin: -19% 0 0 -19%;
+  border-radius: 50%;
+  background: #3b4a40;
+  box-shadow: 0 3px 0 #0c120e, inset 0 2px 0 rgba(255, 255, 255, .12);
+  z-index: 1;
+  pointer-events: none;
+}
+.buttons { position: relative; width: clamp(130px, 38vw, 168px); aspect-ratio: 1.15; }
+.act {
+  position: absolute;
+  width: 46%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 0;
+  font-family: var(--label);
+  font-size: 1.1rem;
+  color: var(--paper);
+  box-shadow: 0 5px 0 rgba(0, 0, 0, .45), inset 0 2px 0 rgba(255, 255, 255, .2);
+  touch-action: none;
+  cursor: pointer;
+}
+.act small { display: block; font-size: .5rem; letter-spacing: .08em; opacity: .85; margin-top: 2px; }
+.act.a { right: 0; top: 0; background: var(--a); }
+.act.b { left: 0; bottom: 0; background: var(--b); color: var(--ink); }
+.act.down { transform: translateY(4px); box-shadow: 0 1px 0 rgba(0, 0, 0, .45); }
+@media (prefers-reduced-motion: reduce) {
+  .area { animation-duration: 1ms; animation-delay: 0s; }
+  .dialog .more { animation: none; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="bar">
+    <h1>MOSSBLADE</h1>
+    <button class="chip" id="music" type="button" aria-pressed="true">MUSIC</button>
+    <button class="chip" id="sound" type="button" aria-pressed="true">SFX</button>
+    <button class="chip" id="pause" type="button" aria-pressed="false">PAUSE</button>
+  </div>
+
+  <div class="screen" id="screen">
+    <div class="frame" id="frame">
+      <canvas id="c" width="192" height="216" aria-label="Game screen" role="img"></canvas>
+      <div class="dialog" id="dialog" hidden><span id="dialog-text"></span><span class="more" id="dialog-more">▼</span></div>
+      <div class="overlay" id="overlay">
+        <p class="kicker" id="ov-kicker">A HOLLOWMERE TALE</p>
+        <h2 id="ov-title">Mossblade</h2>
+        <p class="body" id="ov-text">The Cinder Warden has stolen the <b>Sunstone</b>, and the valley is wilting. Find a blade, open the Ember Ruins, and bring the light home.</p>
+        <div class="row" id="ov-buttons"></div>
+        <p class="hint" id="ov-hint">LEFT PAD: WALK · A: SWORD / TALK · B: POTION<br>KEYBOARD: ARROWS · Z · X</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <div class="pad" id="pad" aria-label="Movement pad"><div class="knob" id="knob"></div></div>
+    <div class="buttons">
+      <button class="act b" id="btn-b" type="button" aria-label="B: drink potion">B<small>ITEM</small></button>
+      <button class="act a" id="btn-a" type="button" aria-label="A: sword or talk">A<small>SWORD</small></button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  // ================= Art =================
+  const PAL = {
+    k: "#1a1c2c", m: "#5d275d", r: "#b13e53", o: "#ef7d57", y: "#ffcd75", l: "#a7f070", g: "#38b764",
+    t: "#257179", n: "#29366f", b: "#3b5dc9", c: "#41a6f6", a: "#73eff7", w: "#f4f4f4", e: "#94b0c2",
+    d: "#566c86", s: "#333c57", G: "#2a8a52", u: "#8b5a3c", z: "#f5c8a0", v: "#5f6e36", V: "#7f8f45",
+    Y: "#e3b56a",
+  };
+  const BM = {
+    grass: ["GGGGGGGG", "GGgGGGGG", "GgGGGGGG", "GGGGGGgG", "GGGGGgGG", "GGGGGGGG", "GGGgGGGG", "GGgGGGGG"],
+    flowers: ["GGGGGGGG", "GGyGGGGG", "GyoyGGGG", "GGyGGGwG", "GGGGGwyw", "GGGGGGwG", "GGGGGGGG", "GGGGGGGG"],
+    dead: ["vvvvvvvv", "vvVvvvvv", "vvvvvvvv", "vvvvvVvv", "vVvvvvvv", "vvvvvvvv", "vvvvVvvv", "vvvvvvvv"],
+    sand: ["YYYYYYYY", "YYYoYYYY", "YYYYYYYY", "YoYYYYYY", "YYYYYYoY", "YYYYYYYY", "YYYYoYYY", "YYYYYYYY"],
+    bridge: ["uuuuuuuu", "kkkkkkkk", "uuuyuuuu", "uuuuuuuu", "kkkkkkkk", "uuuuuyuu", "uuuuuuuu", "kkkkkkkk"],
+    tree: [".kkkkkk.", "kgglgggk", "kglggggk", "kggggtsk", "kgggtssk", ".kttssk.", "..kuuk..", "..kuuk.."],
+    rock: ["GkkkkkkG", "keweeedk", "keeeeddk", "keeedddk", "kedddsdk", "kddddssk", "GkkkkkkG", "GGGGGGGG"],
+    water1: ["bbbbbbbb", "bbcbbbbb", "bcabbbbb", "bbbbbbbb", "bbbbbcbb", "bbbbcabb", "bbbbbbbb", "bbbbbbbb"],
+    water2: ["bbbbbbbb", "bbbbbcbb", "bbbbcabb", "bbbbbbbb", "bbcbbbbb", "bcabbbbb", "bbbbbbbb", "bbbbbbbb"],
+    cave: ["edkkkkde", "dkkkkkkd", "dkkkkkkd", "kkkkkkkk", "kkkkkkkk", "kkkkkkkk", "kkkkkkkk", "kkkkkkkk"],
+    door: ["sdkkkkds", "dkkkkkkd", "kkkkkkkk", "kkkkkkkk", "kkkkkkkk", "kkkkkkkk", "kkkkkkkk", "kkkkkkkk"],
+    brick: ["dddkdddd", "ssskssss", "kkkkkkkk", "dkddddkd", "skssssks", "kkkkkkkk", "dddkdddd", "ssskssss"],
+    floor: ["snnnnnnn", "nnnnnnnn", "nnnsnnnn", "nnnnnnnn", "nnnnnnsn", "nnnnnnnn", "nsnnnnnn", "nnnnnnnn"],
+    statue: [".kkkkkk.", "keeeeeek", "kedkkdek", "keeeeeek", "kkeddekk", "keeeeeek", "kddddddk", "kkkkkkkk"],
+    locked: ["kkkkkkkk", "kuuuuuuk", "kuyyyyuk", "kuykkyuk", "kuykkyuk", "kuyyyyuk", "kuuuuuuk", "kkkkkkkk"],
+    sign: [".kkkkkk.", "kuuuuuuk", "kukkkuuk", "kuuuuuuk", "kuukkkuk", ".kkkkkk.", "...uu...", "...uu..."],
+    tomb: ["..kkkk..", ".keeeek.", "keeweeek", "kewwweek", "keeweeek", "keeeeedk", "kddddddk", ".kkkkkk."],
+    spring1: ["cacccaca", "ccacccac", "acccacca", "ccaccccc", "cccacacc", "acccccca", "ccacacca", "caccccac"],
+    spring2: ["ccaccacc", "acccaccc", "ccacccac", "acccacca", "ccaccccc", "cacccacc", "accccacc", "ccacccca"],
+    cavewall: ["sdsssdss", "dsssdsss", "ssdsssds", "sssdssss", "dsssssds", "ssdsdsss", "sssssdss", "dssdssss"],
+    cavefloor: ["ssssssss", "sdssssss", "ssssssss", "sssssdss", "ssssssss", "ssdsssss", "ssssssds", "ssssssss"],
+    black: ["kkkkkkkk", "kkkkkkkk", "kkkkkkkk", "kkkkkkkk", "kkkkkkkk", "kkkkkkkk", "kkkkkkkk", "kkkkkkkk"],
+    chest: ["........", ".kkkkkk.", "kouuuuok", "kuuuuuuk", "kkkyykkk", "kuuyyuuk", "kuuuuuuk", "kkkkkkkk"],
+    chestopen: [".kkkkkk.", "kuuuuuuk", "kkkkkkkk", "kskkkksk", "kuuuuuuk", "kuuuuuuk", "kuuuuuuk", "kkkkkkkk"],
+    torch1: ["...o....", "..oyo...", "..oyyo..", "...ro...", ".kkkkkk.", "..kddk..", "..kddk..", ".kkkkkk."],
+    torch2: ["....o...", "...oyo..", "..oyyo..", "..or....", ".kkkkkk.", "..kddk..", "..kddk..", ".kkkkkk."],
+
+    heroDown1: ["..kkkk..", ".kggggk.", "kgzzzzgk", ".zkzzkz.", ".kggggk.", "kzgugGzk", ".kggggk.", ".ku..k.."],
+    heroDown2: ["..kkkk..", ".kggggk.", "kgzzzzgk", ".zkzzkz.", ".kggggk.", "kzgugGzk", ".kggggk.", "..k..uk."],
+    heroUp1: ["..kkkk..", ".kggggk.", "kggggggk", ".kggggk.", ".kGggGk.", "kzggggzk", ".kggggk.", ".ku..k.."],
+    heroUp2: ["..kkkk..", ".kggggk.", "kggggggk", ".kggggk.", ".kGggGk.", "kzggggzk", ".kggggk.", "..k..uk."],
+    heroSide1: ["..kkkk..", ".kgggggk", "kggzzzk.", ".kgzzkz.", "..kgggk.", "..kgzgk.", "..kgggk.", "..ku.uk."],
+    heroSide2: ["..kkkk..", ".kgggggk", "kggzzzk.", ".kgzzkz.", "..kgggk.", "..kgzgk.", "..kgggk.", ".ku...uk"],
+    slime1: ["........", "........", "...kk...", "..kcck..", ".kcwcck.", ".kcccck.", "kccccccb", ".kkkkkk."],
+    slime2: ["........", "........", "........", "..kkkk..", ".kcwcck.", "kcccccck", "kccccccb", ".kkkkkk."],
+    bat1: ["........", "k......k", "km....mk", "kmmkkmmk", ".kmrrmk.", "..kmmk..", "........", "........"],
+    bat2: ["........", "........", "........", "..kkkk..", "kmmrrmmk", "kmkmmkmk", "k......k", "........"],
+    skel1: ["..kkkk..", ".kwwwwk.", ".kwkkwk.", ".kwwwwk.", "..kwwk..", ".kwkwwk.", ".kwwwwk.", ".kw..wk."],
+    skel2: ["..kkkk..", ".kwwwwk.", ".kwkkwk.", ".kwwwwk.", "..kwwk..", ".kwkwwk.", ".kwwwwk.", "..wk.kw."],
+    knight1: ["..kkkk..", ".keeeek.", ".kekkek.", ".keeeek.", "kbbeebbk", "kbbbbbbk", ".kbbbbk.", ".kn..nk."],
+    knight2: ["..kkkk..", ".keeeek.", ".kekkek.", ".keeeek.", "kbbeebbk", "kbbbbbbk", ".kbbbbk.", ".nk..kn."],
+    hermit: ["..kkkk..", ".kmmmmk.", ".kzzzzk.", ".zkzzkz.", ".kwwwwk.", "kmwwwwmk", ".kmmmmk.", ".kmmmmk."],
+    shopkeep: ["..kkkk..", ".kooook.", ".kzzzzk.", ".zkzzkz.", ".kzzzzk.", "kboooobk", ".kbbbbk.", ".kb..bk."],
+    gem: ["........", "...kk...", "..kack..", "..kcbk..", "..kcbk..", "...kk...", "........", "........"],
+    biggem: ["...kk...", "..kyok..", ".kyoork.", ".koorrk.", ".korrmk.", "..krmk..", "...kk...", "........"],
+    heart: ["........", ".kk.kk..", "kwrkrrk.", "krrrrrk.", ".krrrk..", "..krk...", "...k....", "........"],
+    heartEmpty: ["........", ".kk.kk..", "ksskssk.", "ksssssk.", ".ksssk..", "..ksk...", "...k....", "........"],
+    oldkey: ["........", "..kkk...", ".keeek..", ".ke.ek..", ".keeek..", "..kek...", "..keek..", "..kek..."],
+    bosskey: ["..kkk...", ".kyyyk..", ".ky.yk..", ".kyyyk..", "..kyk...", "..kyyk..", "..kyk...", "..kyyk.."],
+    sword: ["....k...", "...kwk..", "...kwk..", "...kwk..", "...kwk..", "..kyyyk.", "...kuk..", "...kk..."],
+    potion: ["...kk...", "..kuuk..", "..kkkk..", ".krrrrk.", "krwrrrrk", "krrrrrrk", "krrrrrrk", ".kkkkkk."],
+    sunstone: ["...kk...", "..kyyk..", ".kywyyk.", "kywyyyyk", "kyyyyyok", ".kyyyok.", "..kyok..", "...kk..."],
+    fire: ["........", "...oo...", "..oyyo..", "..oyyo..", "...oo...", "........", "........", "........"],
+    boss: [
+      "....kkkkkkkk....", "..kkmmmmmmmmkk..", ".kmmrrrrrrrrmmk.", "kmmrrrrrrrrrrmmk",
+      "kmrrkkkrrkkkrrmk", "kmrrkyykkyykrrmk", "kmrrkkkrrkkkrrmk", "kmmrrrrrrrrrrmmk",
+      "kmmrrkkkkkkrrmmk", "kmmrkoyoyoykrmmk", ".kmrkkkkkkkkrmk.", ".kmmrrrrrrrrmmk.",
+      "kokmmmmmmmmmmkok", "koo.kmmkkmmk.ook", ".kk.kmk..kmk.kk.", "....kk....kk....",
+    ],
+  };
+  const DIGITS = {
+    0: ["111", "101", "101", "101", "111"], 1: ["010", "110", "010", "010", "111"], 2: ["111", "001", "111", "100", "111"],
+    3: ["111", "001", "111", "001", "111"], 4: ["101", "101", "111", "001", "001"], 5: ["111", "100", "111", "001", "111"],
+    6: ["111", "100", "111", "101", "111"], 7: ["111", "001", "001", "001", "001"], 8: ["111", "101", "111", "101", "111"],
+    9: ["111", "101", "111", "001", "111"], x: ["000", "101", "010", "101", "000"],
+  };
+
+  const spriteCache = {};
+  function spr(name, flip = false, white = false) {
+    const key = name + (flip ? "-f" : "") + (white ? "-w" : "");
+    if (spriteCache[key]) return spriteCache[key];
+    const rows = BM[name], h = rows.length, w = rows[0].length;
+    const cv = document.createElement("canvas");
+    cv.width = w; cv.height = h;
+    const cx = cv.getContext("2d");
+    rows.forEach((row, y) => [...row].forEach((ch, x) => {
+      if (ch === ".") return;
+      cx.fillStyle = white ? "#ffffff" : PAL[ch];
+      cx.fillRect(flip ? w - 1 - x : x, y, 1, 1);
+    }));
+    return (spriteCache[key] = cv);
+  }
+
+  // ================= World =================
+  const TS = 16, COLS = 12, ROWS = 12, HUD = 24, VW = COLS * TS, VH = ROWS * TS + HUD;
+
+  const TILES = {
+    ".": { bm: "grass" }, ",": { bm: "flowers" }, ":": { bm: "dead" }, "~": { bm: "sand" }, B: { bm: "bridge" },
+    T: { over: "tree", solid: 1 }, R: { bm: "rock", solid: 1 }, W: { bm: ["water1", "water2"], solid: 1 },
+    C: { bm: "cave", warp: 1 }, D: { bm: "door", warp: 1 }, L: { bm: "locked", solid: 1 },
+    "#": { bm: "brick", solid: 1 }, _: { bm: "floor" }, X: { over: "statue", solid: 1 }, S: { over: "sign", solid: 1 },
+    "+": { over: "tomb", solid: 1 }, F: { bm: ["spring1", "spring2"] }, K: { bm: "cavewall", solid: 1 },
+    f: { bm: "cavefloor" }, x: { bm: "black", warp: 1 }, Q: { over: "chest", solid: 1 }, q: { over: "chestopen", solid: 1 },
+    Y: { over: ["torch1", "torch2"], solid: 1 },
+  };
+
+  const CAVE = [
+    "KKKKKKKKKKKK", "KffffffffffK", "KffffffffffK", "KffYffffYffK", "KffffffffffK", "KffffffffffK",
+    "KffffffffffK", "KffffffffffK", "KffffffffffK", "KffffffffffK", "KffffffffffK", "KKKKKxxKKKKK",
+  ];
+
+  // Rooms. Overworld "o:x,y" and dungeon "d:x,y" sit on grids; walking off an
+  // edge moves to the neighbour. Positions are in tiles (tile centres at .0).
+  const ROOMS = {
+    "o:1,2": {
+      name: "Hollowmere Valley", ground: ".", music: "over",
+      map: ["TTTTT..TTTTT", "TRRRRR.....T", "TRRCRR..,..T", "T..........T", "T.....,....T", "............",
+        "..,.........", "T......S...T", "T.,........T", "T....,..,..T", "T..........T", "TTTTTTTTTTTT"],
+      signs: { "7,7": "<b>Hollowmere Valley.</b> The hermit's cave is just up the hill, to the north-west." },
+      warps: { "3,2": { to: "hermit", x: 5.5, y: 10 } },
+    },
+    "o:1,1": {
+      name: "The Crossroads", ground: ".", music: "over",
+      map: ["TTTTT~~TTTTT", "T....~~....T", "T.,..~~..,.T", "T....~~....T", "T....~~....T", "~~~~~~~~~~~~",
+        "~~~~~~~~~~~~", "T....~~....T", "T.,..~~.S..T", "T....~~..,.T", "T....~~....T", "TTTTT~~TTTTT"],
+      signs: { "8,8": "<b>North:</b> the Ember Ruins. <b>West:</b> the old graveyard. <b>East:</b> Saltmarsh Shore." },
+      enemies: [["slime", 3, 3], ["slime", 8, 9], ["slime", 9, 3]],
+    },
+    "o:1,0": {
+      name: "Ember Ruins", ground: ".", music: "over",
+      map: ["RRRRRRRRRRRR", "RR###L####RR", "R...X~~X...R", "R....~~....R", "T....~~..,.T", ".....~~.....",
+        "..,..~~.....", "T....~~....T", "T.,..~~....T", "T....~~..,.T", "T....~~....T", "TTTTT~~TTTTT"],
+      enemies: [["bat", 3, 7], ["bat", 8, 8], ["skeleton", 9, 4]],
+      warps: { "5,1": { to: "d:1,1", x: 5.5, y: 10 } },
+    },
+    "o:0,0": {
+      name: "Tanglewood", ground: ".", music: "over",
+      map: ["TTTTTTTTTTTT", "T..T.....T.T", "T..T.TTT.T.T", "T....T...T.T", "TTTT.T.TTT.T", "T....T....,.",
+        "T.TTTT.TT...", "T.T....T...T", "T.T.TTTT.T.T", "T...T....T.T", "T.T...TT...T", "TTTTTTTTTTTT"],
+      enemies: [["slime", 6, 9], ["slime", 8, 1], ["slime", 1, 7]],
+      items: [["vessel", 1, 1, "forest"]],
+    },
+    "o:2,0": {
+      name: "Stillwater", ground: ".", music: "over",
+      map: ["TTTTTTTTTTTT", "T....WWWWWWT", "T....W...WWT", "T.,..W.Q.WWT", "T....W...WWT", ".....BBBBWWT",
+        "......WWWWWT", "T......WWWWT", "T..,....WWWT", "T.......WWWT", "T.......WWWT", "TTTTT..TTTTT"],
+      enemies: [["bat", 3, 3], ["bat", 3, 8]],
+      chests: { "7,3": { id: "lake", gems: 30 } },
+    },
+    "o:0,1": {
+      name: "The Old Graveyard", ground: ":", music: "over",
+      map: ["TTTTTTTTTTTT", "T::::::::::T", "T:+::+::+::T", "T::::::::::T", "T:+::+::+::T", "T:::::::::::",
+        "T:::::::::::", "T:+::+::+::T", "T::::::::::T", "T:+::+::+::T", "T::::::::::T", "TTTTTTTTTTTT"],
+      enemies: [["skeleton", 3, 3], ["skeleton", 7, 6], ["skeleton", 4, 8]],
+      onClear: ["oldkey", 6, 5],
+    },
+    "o:2,1": {
+      name: "Saltmarsh Shore", ground: ".", music: "over",
+      map: ["TTTTT..TTTTT", "T....~~~~WWW", "T....~~~~WWW", "T.,..~~~~WWW", "T....~~~WWWW", "....~~~~WWWW",
+        "....~~~~~WWW", "T...~~~~~WWW", "T....~~~~WWW", "T..,.~~~~WWW", "T....~~~~WWW", "TTTTT..TTTTT"],
+      enemies: [["slime", 2, 3], ["slime", 3, 8], ["bat", 6, 6]],
+      items: [["gem", 6, 2], ["gem", 7, 9], ["biggem", 5, 5]],
+    },
+    "o:0,2": {
+      name: "Moonwell", ground: ".", music: "over",
+      map: ["TTTTTTTTTTTT", "TT........TT", "T...FFFF...T", "T...FFFF...T", "T..........T", "T....S......",
+        "T...........", "T.T.T..T.T.T", "T..........T", "TT.T.TT.T.TT", "T..........T", "TTTTTTTTTTTT"],
+      signs: { "5,5": "<b>Moonwell Spring.</b> Stand in the glowing water to heal." },
+      enemies: [["slime", 2, 8], ["slime", 9, 10]],
+    },
+    "o:2,2": {
+      name: "Pip's Hollow", ground: ".", music: "over",
+      map: ["TTTTT..TTTTT", "T..........T", "T.RRRRRR...T", "T.RRRCRR...T", "T..........T", "...,.......T",
+        "...........T", "T....,.....T", "T..TT...TT.T", "T..TT...TT.T", "T..........T", "TTTTTTTTTTTT"],
+      enemies: [["slime", 3, 6], ["slime", 8, 10], ["skeleton", 6, 7]],
+      warps: { "5,3": { to: "shop", x: 5.5, y: 10 } },
+    },
+    hermit: {
+      name: "Hermit's Cave", ground: "f", music: "cave", map: CAVE,
+      npcs: [["hermit", 5.5, 2]],
+      items: [["sword", 5.5, 5]],
+      warps: { "5,11": { to: "o:1,2", x: 3, y: 3 }, "6,11": { to: "o:1,2", x: 3, y: 3 } },
+    },
+    shop: {
+      name: "Pip's Shop", ground: "f", music: "cave", map: CAVE,
+      npcs: [["shopkeep", 5.5, 2]],
+      items: [["shop-potion", 3.5, 6], ["shop-vessel", 7.5, 6, "shop"]],
+      warps: { "5,11": { to: "o:2,2", x: 5, y: 4 }, "6,11": { to: "o:2,2", x: 5, y: 4 } },
+    },
+    "d:1,1": {
+      name: "Ember Ruins: First Hall", ground: "_", music: "dungeon",
+      map: ["#####LL#####", "#__________#", "#_X______X_#", "#__________#", "#__________#", "____________",
+        "____________", "#__________#", "#_X______X_#", "#__________#", "#__________#", "#####xx#####"],
+      enemies: [["knight", 3, 4], ["knight", 8, 7]],
+      warps: { "5,11": { to: "o:1,0", x: 5.5, y: 2 }, "6,11": { to: "o:1,0", x: 5.5, y: 2 } },
+    },
+    "d:0,1": {
+      name: "Ember Ruins: Bone Hall", ground: "_", music: "dungeon",
+      map: ["############", "#__________#", "#_XX____XX_#", "#__________#", "#____XX____#", "#____XX_____",
+        "#___________", "#__________#", "#_XX____XX_#", "#__________#", "#__________#", "############"],
+      enemies: [["skeleton", 2, 3], ["skeleton", 9, 9], ["knight", 3, 9]],
+      onClear: ["bosskey", 5.5, 7],
+    },
+    "d:2,1": {
+      name: "Ember Ruins: Bat Roost", ground: "_", music: "dungeon",
+      map: ["############", "#__________#", "#__________#", "#__#____#__#", "#__#_Q__#__#", "___#____#__#",
+        "___________#", "#__________#", "#__#____#__#", "#__________#", "#__________#", "############"],
+      enemies: [["bat", 2, 2], ["bat", 9, 2], ["bat", 9, 9], ["slime", 2, 9], ["slime", 5, 9]],
+      chests: { "5,4": { id: "roost", gems: 50 } },
+    },
+    "d:1,0": {
+      name: "The Warden's Forge", ground: "_", music: "boss",
+      map: ["############", "#__________#", "#__________#", "#_X______X_#", "#__________#", "#__________#",
+        "#__________#", "#__________#", "#__________#", "#__________#", "#__________#", "#####__#####"],
+      enemies: [["boss", 5.5, 3]],
+    },
+  };
+
+  const ENEMY = {
+    slime: { hp: 1, dmg: 1, speed: 28, frames: ["slime1", "slime2"] },
+    bat: { hp: 1, dmg: 1, speed: 52, frames: ["bat1", "bat2"], flies: true },
+    skeleton: { hp: 2, dmg: 2, speed: 36, frames: ["skel1", "skel2"] },
+    knight: { hp: 3, dmg: 2, speed: 30, frames: ["knight1", "knight2"] },
+    boss: { hp: 14, dmg: 2, speed: 40, frames: ["boss"], size: 28 },
+  };
+
+  // ================= Save =================
+  const STORE = "mossblade-v1";
+  const freshSave = () => ({
+    sword: false, oldKey: 0, bossKey: 0, vessels: {}, chests: {}, bossDead: false, sunstone: false,
+    maxHp: 6, gems: 0, potions: 0, deaths: 0, time: 0, room: "o:1,2", x: 5.5, y: 8,
+  });
+  let save = freshSave();
+  let prefs = { music: true, sound: true };
+  const loadSave = () => { try { return JSON.parse(localStorage.getItem(STORE)); } catch { return null; } };
+  const writeSave = () => { try { localStorage.setItem(STORE, JSON.stringify({ save, prefs })); } catch {} };
+  const stored = loadSave();
+  if (stored?.prefs) prefs = { ...prefs, ...stored.prefs };
+
+  // ================= Audio =================
+  let actx = null, master = null, noiseBuf = null;
+  function unlockAudio() {
+    if (actx) { if (actx.state === "suspended") actx.resume(); return; }
+    try {
+      actx = new (window.AudioContext || window.webkitAudioContext)();
+      master = actx.createGain(); master.gain.value = 0.8; master.connect(actx.destination);
+      noiseBuf = actx.createBuffer(1, actx.sampleRate * 0.4, actx.sampleRate);
+      const d = noiseBuf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    } catch { actx = null; }
+  }
+  const hz = (m) => 440 * Math.pow(2, (m - 69) / 12);
+  function tone(f, dur, type = "square", vol = 0.05, when = 0, slide = 0, out) {
+    if (!actx) return;
+    const t = actx.currentTime + when;
+    const o = actx.createOscillator(), v = actx.createGain();
+    o.type = type; o.frequency.setValueAtTime(f, t);
+    if (slide) o.frequency.exponentialRampToValueAtTime(slide, t + dur);
+    v.gain.setValueAtTime(vol, t); v.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(v).connect(out || master);
+    o.start(t); o.stop(t + dur + 0.02);
+  }
+  function noise(dur, vol = 0.08, when = 0, freq = 2000) {
+    if (!actx) return;
+    const t = actx.currentTime + when;
+    const s = actx.createBufferSource(), f = actx.createBiquadFilter(), v = actx.createGain();
+    s.buffer = noiseBuf; f.type = "bandpass"; f.frequency.value = freq;
+    v.gain.setValueAtTime(vol, t); v.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    s.connect(f).connect(v).connect(master);
+    s.start(t); s.stop(t + dur);
+  }
+  const arp = (notes, step = 0.07, type = "square", vol = 0.06, last = 0.25) =>
+    notes.forEach((m, i) => tone(hz(m), i === notes.length - 1 ? last : step * 1.4, type, vol, i * step));
+  const SFX = {
+    swing: () => { noise(0.12, 0.1, 0, 3000); tone(900, 0.1, "sawtooth", 0.025, 0, 300); },
+    beam: () => tone(1400, 0.25, "square", 0.03, 0, 500),
+    hit: () => { tone(220, 0.08, "square", 0.07); noise(0.06, 0.08, 0, 800); },
+    kill: () => { noise(0.25, 0.12, 0, 1200); tone(500, 0.2, "square", 0.04, 0, 80); },
+    hurt: () => tone(420, 0.25, "square", 0.08, 0, 120),
+    gem: () => { tone(1568, 0.05, "square", 0.04); tone(2093, 0.12, "square", 0.04, 0.05); },
+    heart: () => arp([76, 81, 88], 0.05, "triangle", 0.09, 0.15),
+    item: () => arp([67, 71, 74, 79, 74, 79, 83], 0.09, "square", 0.05, 0.5),
+    secret: () => arp([72, 76, 79, 84, 88], 0.08, "triangle", 0.09, 0.35),
+    unlock: () => { tone(110, 0.15, "square", 0.08); arp([79, 84], 0.08, "triangle", 0.08, 0.3); },
+    chest: () => arp([60, 64, 67, 72, 76, 79], 0.06, "square", 0.05, 0.4),
+    blip: () => tone(660, 0.02, "square", 0.015),
+    spring: () => arp([84, 88], 0.06, "sine", 0.06, 0.2),
+    potion: () => arp([60, 64, 67, 72, 76, 79, 84], 0.05, "triangle", 0.08, 0.3),
+    bossHit: () => { tone(110, 0.2, "sawtooth", 0.08, 0, 70); noise(0.15, 0.1, 0, 500); },
+    bossDie: () => { for (let i = 0; i < 6; i++) noise(0.3, 0.12, i * 0.15, 400 + i * 200); tone(300, 1.4, "sawtooth", 0.06, 0, 40); },
+    fire: () => noise(0.15, 0.05, 0, 600),
+    death: () => arp([67, 63, 60, 55, 48], 0.16, "square", 0.06, 0.6),
+    no: () => tone(150, 0.12, "square", 0.05),
+  };
+  const sfx = (name) => { if (prefs.sound && actx) SFX[name](); };
+
+  // Music: each song has a melody and a bass line of [midi, beats]; both span the same number of beats.
+  const SONGS = {
+    over: { bpm: 116, wave: "square",
+      mel: [[69, 1], [72, 1], [76, 2], [74, 1], [72, 1], [71, 2], [69, 1], [71, 1], [72, 1], [74, 1], [76, 4],
+        [77, 1], [76, 1], [74, 2], [72, 1], [71, 1], [69, 2], [67, 1], [69, 1], [71, 1], [72, 1], [69, 4]],
+      bass: [[45, 4], [41, 4], [43, 4], [45, 4], [41, 4], [38, 4], [40, 4], [45, 4]] },
+    cave: { bpm: 80, wave: "triangle",
+      mel: [[64, 2], [0, 2], [67, 2], [0, 2], [62, 2], [0, 2], [60, 4]],
+      bass: [[40, 8], [36, 8]] },
+    dungeon: { bpm: 92, wave: "square",
+      mel: [[57, 2], [60, 2], [59, 2], [56, 2], [57, 2], [64, 2], [63, 4]],
+      bass: [[45, 4], [44, 4], [43, 4], [42, 4]] },
+    boss: { bpm: 150, wave: "sawtooth",
+      mel: [[69, .5], [69, .5], [72, .5], [69, .5], [75, .5], [74, .5], [72, 1], [69, .5], [69, .5], [72, .5], [69, .5], [67, .5], [66, .5], [64, 1]],
+      bass: [[45, .5], [45, .5], [45, .5], [45, .5], [46, .5], [46, .5], [46, .5], [46, .5], [45, .5], [45, .5], [45, .5], [45, .5], [43, .5], [43, .5], [44, .5], [44, .5]] },
+  };
+  let song = null, songName = "", mi = 0, bi = 0, mt = 0, bt = 0, musicBus = null;
+  function playSong(name) {
+    if (name === songName) return;
+    songName = name;
+    if (!actx) return;
+    if (musicBus) { const old = musicBus; old.gain.setTargetAtTime(0, actx.currentTime, 0.05); setTimeout(() => old.disconnect(), 400); }
+    musicBus = actx.createGain();
+    musicBus.gain.value = prefs.music ? 1 : 0;
+    musicBus.connect(master);
+    song = SONGS[name] || null;
+    mi = bi = 0;
+    mt = bt = actx.currentTime + 0.08;
+  }
+  setInterval(() => {
+    if (!actx || !song || !musicBus) return;
+    const beat = 60 / song.bpm, ahead = actx.currentTime + 0.2;
+    while (mt < ahead) {
+      const [m, len] = song.mel[mi];
+      if (m) tone(hz(m), len * beat * 0.9, song.wave, 0.022, mt - actx.currentTime, 0, musicBus);
+      mt += len * beat; mi = (mi + 1) % song.mel.length;
+    }
+    while (bt < ahead) {
+      const [m, len] = song.bass[bi];
+      for (let i = 0; i < len; i += Math.min(len, 1)) {
+        const oct = (i / Math.min(len, 1)) % 2 ? 12 : 0;
+        tone(hz(m + oct), Math.min(len, 1) * beat * 0.8, "triangle", 0.05, bt + i * beat - actx.currentTime, 0, musicBus);
+      }
+      bt += len * beat; bi = (bi + 1) % song.bass.length;
+    }
+  }, 60);
+  function syncMusic() { if (musicBus) musicBus.gain.setTargetAtTime(prefs.music ? 1 : 0, actx.currentTime, 0.05); }
+
+  // ================= State =================
+  const $ = (id) => document.getElementById(id);
+  const canvas = $("c"), out = canvas.getContext("2d");
+  const buf = document.createElement("canvas");
+  buf.width = VW; buf.height = VH;
+  const ctx = buf.getContext("2d");
+
+  let mode = "title"; // title | play | dialog | over | win | paused
+  let room, roomId, map, enemies = [], items = [], npcs = [], shots = [], bits = [];
+  let hadEnemies = false, fade = null, clock = 0;
+  const P = { x: 96, y: 128, dir: "down", hp: 6, walk: 0, swing: 0, swingId: 0, hurt: 0, kb: 0, kbx: 0, kby: 0, heal: 0 };
+  const DIRS = { down: [0, 1], up: [0, -1], left: [-1, 0], right: [1, 0] };
+  const tc = (t) => t * TS + TS / 2; // tile coordinate -> pixel centre
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const rnd = (a, b) => a + Math.random() * (b - a);
+
+  function tileAt(px, py) {
+    const c = Math.floor(px / TS), r = Math.floor(py / TS);
+    if (c < 0 || r < 0 || c >= COLS || r >= ROWS) return null;
+    return map[r][c];
+  }
+  const solidTile = (ch) => ch != null && !!TILES[ch]?.solid;
+
+  function enterRoom(id, x, y, preview = false) {
+    roomId = id; room = ROOMS[id];
+    map = room.map.map((row) => [...row]);
+    if (id === "o:1,0" && save.oldKey === 2) map[1][5] = "D";
+    if (id === "d:1,1" && save.bossKey === 2) { map[0][5] = "_"; map[0][6] = "_"; }
+    for (const [k, c] of Object.entries(room.chests || {})) if (save.chests[c.id]) { const [cc, rr] = k.split(",").map(Number); map[rr][cc] = "q"; }
+
+    P.x = tc(x); P.y = tc(y); P.kb = 0; P.swing = 0;
+    enemies = []; items = []; shots = []; bits = [];
+    npcs = (room.npcs || []).map(([kind, c, r]) => ({ kind, x: tc(c), y: tc(r) }));
+    for (const [type, c, r] of room.enemies || []) {
+      if (type === "boss" && save.bossDead) continue;
+      const def = ENEMY[type];
+      enemies.push({ type, x: tc(c), y: tc(r), hp: def.hp, t: rnd(0, 1), vx: 0, vy: 0, hurt: 0, kb: 0, fire: 2, frame: 0, flash: 0 });
+    }
+    hadEnemies = enemies.length > 0;
+    for (const [kind, c, r, id2] of room.items || []) {
+      if (kind === "sword" && save.sword) continue;
+      if ((kind === "vessel" || kind === "shop-vessel") && save.vessels[id2]) continue;
+      items.push({ kind, x: tc(c), y: tc(r), id: id2, t: 0 });
+    }
+    if (room.onClear && !hadEnemies) spawnClear(true);
+    if (id === "d:1,0" && save.bossDead && !save.sunstone) items.push({ kind: "sunstone", x: tc(5.5), y: tc(6), t: 0 });
+
+    if (preview) return;
+    if (id.startsWith("o:") || id.startsWith("d:")) { save.room = id; save.x = x; save.y = y; }
+    writeSave();
+    playSong(room.music);
+    showArea(room.name);
+  }
+
+  function spawnClear(quiet) {
+    const [kind, c, r] = room.onClear;
+    if ((kind === "oldkey" && save.oldKey) || (kind === "bosskey" && save.bossKey)) return;
+    if (items.some((i) => i.kind === kind)) return;
+    items.push({ kind, x: tc(c), y: tc(r), t: 0 });
+    if (!quiet) { sfx("secret"); burst(tc(c), tc(r), ["y", "w", "a"], 16); }
+  }
+
+  let lastArea = "";
+  function showArea(name) {
+    if (name === lastArea) return;
+    lastArea = name;
+    $("frame").querySelectorAll(".area").forEach((n) => n.remove());
+    const el = document.createElement("div");
+    el.className = "area";
+    el.textContent = name;
+    $("frame").appendChild(el);
+    setTimeout(() => el.remove(), 2300);
+  }
+
+  function go(id, x, y) {
+    fade = { t: 0, dur: 0.36, done: false, action: () => enterRoom(id, x, y) };
+  }
+
+  // ================= Dialog =================
+  let queue = [], typing = null, onDialogEnd = null;
+  function say(lines, then) {
+    queue = Array.isArray(lines) ? [...lines] : [lines];
+    onDialogEnd = then || null;
+    mode = "dialog";
+    $("dialog").hidden = false;
+    nextLine();
+  }
+  function nextLine() {
+    if (typing && typing.i < typing.text.length) { typing.i = typing.text.length; renderTyping(); return; }
+    const line = queue.shift();
+    if (line == null) {
+      $("dialog").hidden = true;
+      mode = "play";
+      const f = onDialogEnd; onDialogEnd = null;
+      f?.();
+      return;
+    }
+    typing = { html: line, text: line.replace(/<[^>]+>/g, ""), i: 0, acc: 0 };
+    renderTyping();
+  }
+  function renderTyping() {
+    // Reveal the plain text progressively, then swap in the formatted line.
+    const done = typing.i >= typing.text.length;
+    if (done) $("dialog-text").innerHTML = typing.html;
+    else $("dialog-text").textContent = typing.text.slice(0, typing.i);
+    $("dialog-more").hidden = !done;
+  }
+  function tickTyping(dt) {
+    if (!typing || typing.i >= typing.text.length) return;
+    typing.acc += dt * 45;
+    while (typing.acc >= 1 && typing.i < typing.text.length) {
+      typing.acc -= 1; typing.i++;
+      if (typing.i % 3 === 0) sfx("blip");
+    }
+    renderTyping();
+  }
+  $("dialog").addEventListener("pointerdown", (e) => { e.stopPropagation(); if (mode === "dialog") nextLine(); });
+
+  // ================= Input =================
+  const input = { x: 0, y: 0, a: false, b: false, keys: new Set() };
+  const pad = $("pad"), knob = $("knob");
+  let padId = null;
+  function padMove(e) {
+    const r = pad.getBoundingClientRect();
+    const rad = r.width / 2;
+    let dx = (e.clientX - (r.left + rad)) / rad, dy = (e.clientY - (r.top + rad)) / rad;
+    const len = Math.hypot(dx, dy);
+    if (len > 1) { dx /= len; dy /= len; }
+    knob.style.transform = `translate(${dx * rad * 0.55}px, ${dy * rad * 0.55}px)`;
+    if (len < 0.25) { input.x = input.y = 0; return; }
+    // Snap to 8 directions for crisp grid movement.
+    const ang = Math.round(Math.atan2(dy, dx) / (Math.PI / 4)) * (Math.PI / 4);
+    input.x = Math.round(Math.cos(ang) * 100) / 100;
+    input.y = Math.round(Math.sin(ang) * 100) / 100;
+  }
+  pad.addEventListener("pointerdown", (e) => { unlockAudio(); padId = e.pointerId; pad.setPointerCapture(e.pointerId); padMove(e); });
+  pad.addEventListener("pointermove", (e) => { if (e.pointerId === padId) padMove(e); });
+  const padEnd = (e) => { if (e.pointerId !== padId) return; padId = null; input.x = input.y = 0; knob.style.transform = ""; };
+  pad.addEventListener("pointerup", padEnd);
+  pad.addEventListener("pointercancel", padEnd);
+
+  function press(which) {
+    unlockAudio();
+    if (mode === "dialog") { nextLine(); return; }
+    if (mode === "play") input[which] = true;
+  }
+  for (const [id, which] of [["btn-a", "a"], ["btn-b", "b"]]) {
+    const el = $(id);
+    el.addEventListener("pointerdown", (e) => { e.preventDefault(); el.classList.add("down"); press(which); });
+    const up = () => el.classList.remove("down");
+    el.addEventListener("pointerup", up); el.addEventListener("pointercancel", up); el.addEventListener("pointerleave", up);
+  }
+  document.querySelector(".controls").addEventListener("touchmove", (e) => e.preventDefault(), { passive: false });
+  $("screen").addEventListener("touchmove", (e) => e.preventDefault(), { passive: false });
+
+  const KEYDIR = { ArrowLeft: [-1, 0], a: [-1, 0], ArrowRight: [1, 0], d: [1, 0], ArrowUp: [0, -1], w: [0, -1], ArrowDown: [0, 1], s: [0, 1] };
+  document.addEventListener("keydown", (e) => {
+    const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+    if (KEYDIR[k]) { input.keys.add(k); e.preventDefault(); return; }
+    if (e.repeat) return;
+    if (k === "z" || k === "j" || k === " " || k === "Enter") { e.preventDefault(); press("a"); }
+    if (k === "x" || k === "k") { e.preventDefault(); press("b"); }
+    if (k === "p" || k === "Escape") togglePause();
+  });
+  document.addEventListener("keyup", (e) => input.keys.delete(e.key.length === 1 ? e.key.toLowerCase() : e.key));
+  function moveVector() {
+    if (padId !== null) return [input.x, input.y];
+    let x = 0, y = 0;
+    for (const k of input.keys) { x += KEYDIR[k][0]; y += KEYDIR[k][1]; }
+    const l = Math.hypot(x, y);
+    return l ? [x / l, y / l] : [0, 0];
+  }
+
+  // ================= Collision =================
+  // Player hitbox sits at the feet so you can walk close under trees and walls.
+  const PBOX = { l: -5, r: 5, t: -1, b: 7 };
+  function playerBlocked(x, y) {
+    for (const [px, py] of [[x + PBOX.l, y + PBOX.t], [x + PBOX.r, y + PBOX.t], [x + PBOX.l, y + PBOX.b], [x + PBOX.r, y + PBOX.b]]) {
+      const ch = tileAt(px, py);
+      if (solidTile(ch)) return ch;
+    }
+    for (const n of npcs) if (Math.abs(n.x - x) < 11 && y + PBOX.b > n.y - 4 && y + PBOX.t < n.y + 8) return "npc";
+    return null;
+  }
+  function movePlayer(dx, dy) {
+    let bumped = null;
+    if (dx) {
+      const hit = playerBlocked(P.x + dx, P.y);
+      if (!hit) P.x += dx;
+      else {
+        bumped = hit;
+        // Slide around corners: nudge toward the nearest free lane.
+        for (const s of [1, -1, 2, -2, 3, -3, 4, -4, 5, -5, 6, -6]) {
+          if (!playerBlocked(P.x + dx, P.y + s) && !playerBlocked(P.x, P.y + Math.sign(s))) { P.y += Math.sign(s) * Math.min(Math.abs(dx), 1); break; }
+        }
+      }
+    }
+    if (dy) {
+      const hit = playerBlocked(P.x, P.y + dy);
+      if (!hit) P.y += dy;
+      else {
+        bumped = hit;
+        for (const s of [1, -1, 2, -2, 3, -3, 4, -4, 5, -5, 6, -6]) {
+          if (!playerBlocked(P.x + s, P.y + dy) && !playerBlocked(P.x + Math.sign(s), P.y)) { P.x += Math.sign(s) * Math.min(Math.abs(dy), 1); break; }
+        }
+      }
+    }
+    return bumped;
+  }
+  function enemyBlocked(e, x, y) {
+    const h = (ENEMY[e.type].size || 12) / 2;
+    if (x - h < 0 || y - h < 0 || x + h > VW || y + h > ROWS * TS) return true;
+    if (ENEMY[e.type].flies) return x - h < 12 || y - h < 12 || x + h > VW - 12 || y + h > ROWS * TS - 12;
+    for (const [px, py] of [[x - h, y - h], [x + h - 1, y - h], [x - h, y + h - 1], [x + h - 1, y + h - 1]]) {
+      const ch = tileAt(px, py);
+      if (ch == null || solidTile(ch) || TILES[ch]?.warp || ch === "F") return true;
+    }
+    return false;
+  }
+  function moveEnemy(e, dx, dy) {
+    let ok = true;
+    if (dx) { if (!enemyBlocked(e, e.x + dx, e.y)) e.x += dx; else ok = false; }
+    if (dy) { if (!enemyBlocked(e, e.x, e.y + dy)) e.y += dy; else ok = false; }
+    return ok;
+  }
+  const overlap = (ax, ay, aw, ah, bx, by, bw, bh) => Math.abs(ax - bx) * 2 < aw + bw && Math.abs(ay - by) * 2 < ah + bh;
+
+  // ================= Update =================
+  function update(dt) {
+    clock += dt;
+    if (fade) {
+      fade.t += dt;
+      if (!fade.done && fade.t >= fade.dur / 2) { fade.done = true; fade.action(); }
+      if (fade.t >= fade.dur) fade = null;
+      return;
+    }
+    if (mode === "dialog") { tickTyping(dt); return; }
+    if (mode !== "play") return;
+    save.time += dt;
+
+    const aPressed = input.a, bPressed = input.b;
+    input.a = input.b = false;
+
+    // ----- Player -----
+    if (P.hurt > 0) P.hurt -= dt;
+    if (P.kb > 0) {
+      P.kb -= dt;
+      movePlayer(P.kbx * dt, 0); movePlayer(0, P.kby * dt);
+    } else if (P.swing > 0) {
+      P.swing -= dt;
+    } else {
+      const [vx, vy] = moveVector();
+      if (vx || vy) {
+        if (Math.abs(vx) > Math.abs(vy) + 0.01) P.dir = vx > 0 ? "right" : "left";
+        else if (Math.abs(vy) > Math.abs(vx) + 0.01) P.dir = vy > 0 ? "down" : "up";
+        else if (DIRS[P.dir][0] * vx <= 0 && DIRS[P.dir][1] * vy <= 0) P.dir = vy > 0 ? "down" : "up";
+        const sp = 68 * dt;
+        const bumped = movePlayer(vx * sp, vy * sp);
+        if (bumped === "L") tryUnlock();
+        P.walk += dt;
+      }
+      if (aPressed) actionA();
+      if (bPressed) drinkPotion();
+    }
+
+    // Healing spring.
+    if (tileAt(P.x, P.y + 4) === "F" && P.hp < save.maxHp) {
+      P.heal += dt;
+      if (P.heal > 0.45) { P.heal = 0; P.hp = Math.min(save.maxHp, P.hp + 1); sfx("spring"); burst(P.x, P.y - 6, ["a", "w"], 4); }
+    }
+
+    // Warps and screen edges.
+    const here = tileAt(P.x, P.y + 3);
+    const key = `${Math.floor(P.x / TS)},${Math.floor((P.y + 3) / TS)}`;
+    if (here && TILES[here]?.warp && room.warps?.[key]) { const w = room.warps[key]; go(w.to, w.x, w.y); return; }
+    const edge = P.x < 2 ? [-1, 0] : P.x > VW - 2 ? [1, 0] : P.y < 2 ? [0, -1] : P.y > ROWS * TS - 6 ? [0, 1] : null;
+    if (edge && roomId.includes(":")) {
+      const [area, xy] = roomId.split(":");
+      const [gx, gy] = xy.split(",").map(Number);
+      const next = `${area}:${gx + edge[0]},${gy + edge[1]}`;
+      if (ROOMS[next]) {
+        const nx = edge[0] ? (edge[0] > 0 ? 0.1 : COLS - 1.1) : (P.x - TS / 2) / TS;
+        const ny = edge[1] ? (edge[1] > 0 ? 0 : ROWS - 1.2) : (P.y - TS / 2) / TS;
+        go(next, nx, ny);
+        return;
+      }
+      P.x = clamp(P.x, 2, VW - 2); P.y = clamp(P.y, 2, ROWS * TS - 6);
+    }
+
+    // ----- Sword -----
+    if (P.swing > 0.04 && save.sword) {
+      const [fx, fy] = DIRS[P.dir];
+      const sx = P.x + fx * 12, sy = P.y + 2 + fy * 11;
+      const sw = fx ? 14 : 6, sh = fx ? 6 : 14;
+      for (const e of enemies) {
+        const size = ENEMY[e.type].size || 12;
+        if (e.lastSwing !== P.swingId && overlap(sx, sy, sw, sh, e.x, e.y, size, size)) {
+          e.lastSwing = P.swingId;
+          damageEnemy(e, fx, fy);
+        }
+      }
+    }
+
+    // ----- Enemies -----
+    for (const e of enemies) updateEnemy(e, dt);
+    const before = enemies.length;
+    enemies = enemies.filter((e) => e.hp > 0);
+    if (hadEnemies && before > 0 && enemies.length === 0 && room.onClear) spawnClear(false);
+
+    // ----- Shots -----
+    for (const s of shots) {
+      s.x += s.vx * dt; s.y += s.vy * dt; s.life -= dt;
+      if (s.friendly) {
+        for (const e of enemies) {
+          const size = ENEMY[e.type].size || 12;
+          if (overlap(s.x, s.y, 8, 8, e.x, e.y, size, size)) { damageEnemy(e, Math.sign(s.vx), Math.sign(s.vy)); s.life = 0; break; }
+        }
+        if (solidTile(tileAt(s.x, s.y))) { s.life = 0; burst(s.x, s.y, ["w", "a"], 5); }
+      } else if (overlap(s.x, s.y, 6, 6, P.x, P.y + 2, 10, 12)) { hurtPlayer(1, s.x, s.y); s.life = 0; }
+      if (s.x < -8 || s.y < -8 || s.x > VW + 8 || s.y > ROWS * TS + 8) s.life = 0;
+    }
+    shots = shots.filter((s) => s.life > 0);
+    enemies = enemies.filter((e) => e.hp > 0);
+
+    // ----- Items -----
+    for (const it of items) {
+      it.t += dt;
+      if (it.cool > 0) it.cool -= dt;
+      if (overlap(it.x, it.y, 10, 10, P.x, P.y + 2, 10, 12)) collect(it);
+    }
+    items = items.filter((i) => !i.gone);
+
+    for (const b of bits) { b.x += b.vx * dt; b.y += b.vy * dt; b.vy += 120 * dt; b.life -= dt; }
+    bits = bits.filter((b) => b.life > 0);
+  }
+
+  function actionA() {
+    const [fx, fy] = DIRS[P.dir];
+    const px = P.x + fx * 12, py = P.y + 3 + fy * 12;
+    const c = Math.floor(px / TS), r = Math.floor(py / TS), k = `${c},${r}`;
+    const ch = tileAt(px, py);
+    if (ch === "S" && room.signs?.[k]) { say(room.signs[k]); return; }
+    if (ch === "Q" && room.chests?.[k]) { openChest(c, r, room.chests[k]); return; }
+    if (ch === "L") { tryUnlock(true); return; }
+    const npc = npcs.find((n) => Math.abs(n.x - px) < 14 && Math.abs(n.y - py) < 16);
+    if (npc) { talk(npc); return; }
+    if (!save.sword) { sfx("no"); say("You have no sword yet. The <b>hermit's cave</b> is north-west of where you started."); return; }
+    P.swing = 0.24;
+    P.swingId++;
+    sfx("swing");
+    if (P.hp >= save.maxHp && !shots.some((s) => s.friendly)) {
+      const [vx, vy] = DIRS[P.dir];
+      shots.push({ x: P.x + vx * 10, y: P.y + 2 + vy * 10, vx: vx * 170, vy: vy * 170, friendly: true, life: 1.4, dir: P.dir });
+      setTimeout(() => sfx("beam"), 60);
+    }
+  }
+
+  function talk(n) {
+    if (n.kind === "hermit") {
+      if (!save.sword) say([
+        "<b>Old Tamsin:</b> So, the Cinder Warden finally took the Sunstone. Feel that chill? The whole valley is wilting.",
+        "Take the blade on the floor. It's old, but it remembers how to fight.",
+      ]);
+      else if (!save.oldKey) say("<b>Old Tamsin:</b> The Ember Ruins lie north of the crossroads. Their gate takes the <b>old key</b>, buried with the gravekeepers to the west. Wake them, then put them back to sleep.");
+      else if (!save.bossDead) say("<b>Old Tamsin:</b> Inside the ruins, the Warden's door needs a key of its own. Swing true. At full health your blade throws light.");
+      else say("<b>Old Tamsin:</b> You did it. Bring that stone into the sun.");
+    } else {
+      say([
+        "<b>Pip:</b> Gems for goods! Step onto what you want to buy.",
+        "<b>Potion</b> 15 gems. Tap B to drink one. <b>Heart vessel</b> 40 gems, one per customer.",
+      ]);
+    }
+  }
+
+  function tryUnlock(explicit) {
+    const [fx, fy] = DIRS[P.dir];
+    const ch = tileAt(P.x + fx * 12, P.y + 3 + fy * 12);
+    if (ch !== "L") return;
+    if (roomId === "o:1,0") {
+      if (save.oldKey === 1) {
+        save.oldKey = 2; map[1][5] = "D"; sfx("unlock"); burst(tc(5), tc(1), ["y", "o"], 12); writeSave();
+      } else if (explicit || !tryUnlock.warned) {
+        tryUnlock.warned = true;
+        say("The gate is locked. The keyhole is crusted with grave dirt.");
+      }
+    } else if (roomId === "d:1,1") {
+      if (save.bossKey === 1) {
+        save.bossKey = 2; map[0][5] = "_"; map[0][6] = "_"; sfx("unlock"); burst(tc(5.5), tc(0), ["y", "o", "r"], 16); writeSave();
+      } else if (explicit || !tryUnlock.warnedB) {
+        tryUnlock.warnedB = true;
+        say("A massive door with a keyhole that glows like an ember.");
+      }
+    }
+  }
+
+  function openChest(c, r, chest) {
+    map[r][c] = "q";
+    save.chests[chest.id] = true;
+    save.gems += chest.gems;
+    sfx("chest");
+    burst(tc(c), tc(r), ["y", "c", "a"], 14);
+    writeSave();
+    say(`You found <b>${chest.gems} gems</b>!`);
+  }
+
+  function drinkPotion() {
+    if (save.potions <= 0) { sfx("no"); return; }
+    if (P.hp >= save.maxHp) return;
+    save.potions--; P.hp = save.maxHp; sfx("potion"); burst(P.x, P.y, ["r", "w", "y"], 14); writeSave();
+  }
+
+  function collect(it) {
+    switch (it.kind) {
+      case "gem": save.gems = Math.min(999, save.gems + 1); sfx("gem"); it.gone = true; break;
+      case "biggem": save.gems = Math.min(999, save.gems + 5); sfx("gem"); it.gone = true; break;
+      case "heart": P.hp = Math.min(save.maxHp, P.hp + 2); sfx("heart"); it.gone = true; break;
+      case "sword":
+        save.sword = true; it.gone = true; sfx("item"); writeSave();
+        say(["You got the <b>Mossblade</b>!", "Tap <b>A</b> to swing. At full health, each swing also throws a beam of light."]);
+        break;
+      case "vessel":
+        save.vessels[it.id] = true; save.maxHp += 2; P.hp = save.maxHp; it.gone = true; sfx("item"); writeSave();
+        say("A <b>heart vessel</b>! Your life grows by one heart.");
+        break;
+      case "oldkey":
+        save.oldKey = 1; it.gone = true; sfx("item"); writeSave();
+        say("You got the <b>Old Key</b>! It should open the gate of the Ember Ruins, north of the crossroads.");
+        break;
+      case "bosskey":
+        save.bossKey = 1; it.gone = true; sfx("item"); writeSave();
+        say("You got the <b>Warden Key</b>! The great door in the first hall is waiting.");
+        break;
+      case "sunstone":
+        save.sunstone = true; it.gone = true; sfx("item"); writeSave();
+        playSong("over");
+        say(["You got the <b>Sunstone</b>!", "Warm light pours through the ruins. Above, Hollowmere turns green again."], win);
+        break;
+      case "shop-potion":
+        if (it.cool > 0) break;
+        it.cool = 1.5;
+        if (save.potions >= 3) { say("You can't carry more than three potions."); break; }
+        if (save.gems < 15) { sfx("no"); say("<b>Pip:</b> That's 15 gems, friend. Come back richer."); break; }
+        save.gems -= 15; save.potions++; sfx("item"); writeSave();
+        say("You bought a <b>potion</b>. Tap <b>B</b> to drink it when you're hurt.");
+        break;
+      case "shop-vessel":
+        if (it.cool > 0) break;
+        it.cool = 1.5;
+        if (save.gems < 40) { sfx("no"); say("<b>Pip:</b> The heart vessel is 40 gems. I don't haggle."); break; }
+        save.gems -= 40; save.vessels[it.id] = true; save.maxHp += 2; P.hp = save.maxHp; it.gone = true; sfx("item"); writeSave();
+        say("You bought a <b>heart vessel</b>! Your life grows by one heart.");
+        break;
+    }
+  }
+
+  function hurtPlayer(dmg, fromX, fromY) {
+    if (P.hurt > 0) return;
+    P.hp -= dmg;
+    P.hurt = 1.0;
+    const dx = P.x - fromX, dy = P.y - fromY, l = Math.hypot(dx, dy) || 1;
+    P.kb = 0.16; P.kbx = (dx / l) * 150; P.kby = (dy / l) * 150;
+    P.swing = 0;
+    sfx("hurt");
+    if (P.hp <= 0) die();
+  }
+
+  function die() {
+    P.hp = 0;
+    mode = "over";
+    sfx("death");
+    playSong("none");
+    save.deaths++;
+    writeSave();
+    showOverlay("YOU FELL", "Not yet...", `The valley still needs you. You keep your items and <b>${save.gems} gems</b>.`, [["Try again", respawn]]);
+  }
+  function respawn() {
+    hideOverlay();
+    P.hp = save.maxHp; P.hurt = 1;
+    mode = "play";
+    lastArea = "";
+    enterRoom("o:1,2", 5.5, 8);
+  }
+
+  function damageEnemy(e, fx, fy) {
+    if (e.hurt > 0) return;
+    e.hp--;
+    if (e.type === "boss") {
+      e.hurt = 0.45; e.flash = 0.45;
+      sfx("bossHit");
+      burst(e.x, e.y, ["o", "y", "r"], 8);
+      if (e.hp <= 0) bossDown(e);
+      return;
+    }
+    e.hurt = 0.3; e.flash = 0.3;
+    e.kb = 0.14; e.kbx = fx * 170; e.kby = fy * 170;
+    if (e.hp <= 0) {
+      sfx("kill");
+      burst(e.x, e.y, ["w", "e", "y"], 12);
+      drop(e.x, e.y);
+    } else sfx("hit");
+  }
+
+  function bossDown(e) {
+    sfx("bossDie");
+    save.bossDead = true;
+    shots = [];
+    for (let i = 0; i < 5; i++) setTimeout(() => burst(e.x + rnd(-14, 14), e.y + rnd(-14, 14), ["o", "y", "r", "w"], 16), i * 140);
+    items.push({ kind: "sunstone", x: tc(5.5), y: tc(6), t: 0 });
+    playSong("cave");
+    writeSave();
+  }
+
+  function drop(x, y) {
+    const r = Math.random();
+    if (r < 0.08) items.push({ kind: "biggem", x, y, t: 0 });
+    else if (r < 0.42) items.push({ kind: "gem", x, y, t: 0 });
+    else if (r < 0.6 && P.hp < save.maxHp) items.push({ kind: "heart", x, y, t: 0 });
+  }
+
+  function updateEnemy(e, dt) {
+    const def = ENEMY[e.type];
+    e.frame += dt;
+    if (e.hurt > 0) e.hurt -= dt;
+    if (e.flash > 0) e.flash -= dt;
+    if (e.kb > 0) { e.kb -= dt; moveEnemy(e, e.kbx * dt, 0); moveEnemy(e, 0, e.kby * dt); return; }
+    e.t -= dt;
+    const sp = def.speed * dt;
+
+    if (e.type === "slime" || e.type === "skeleton") {
+      if (e.t <= 0) {
+        e.t = rnd(0.6, 1.5);
+        const chase = e.type === "skeleton" && Math.random() < 0.4;
+        if (chase) {
+          const dx = P.x - e.x, dy = P.y - e.y;
+          [e.vx, e.vy] = Math.abs(dx) > Math.abs(dy) ? [Math.sign(dx), 0] : [0, Math.sign(dy)];
+        } else {
+          [e.vx, e.vy] = [[1, 0], [-1, 0], [0, 1], [0, -1], [0, 0]][Math.floor(Math.random() * 5)];
+        }
+      }
+      if (!moveEnemy(e, e.vx * sp, e.vy * sp)) e.t = 0;
+    } else if (e.type === "bat") {
+      if (e.t <= 0) {
+        e.t = rnd(0.3, 0.9);
+        if (Math.random() < 0.2) { e.vx = e.vy = 0; } else { const a = rnd(0, Math.PI * 2); e.vx = Math.cos(a); e.vy = Math.sin(a); }
+      }
+      if (!moveEnemy(e, e.vx * sp, e.vy * sp)) { e.vx *= -1; e.vy *= -1; }
+    } else if (e.type === "knight") {
+      const dx = P.x - e.x, dy = P.y - e.y;
+      if (e.t <= 0) { e.t = rnd(0.3, 0.6); [e.vx, e.vy] = Math.abs(dx) > Math.abs(dy) ? [Math.sign(dx), 0] : [0, Math.sign(dy)]; }
+      if (!moveEnemy(e, e.vx * sp, e.vy * sp)) { [e.vx, e.vy] = e.vx ? [0, Math.sign(dy) || 1] : [Math.sign(dx) || 1, 0]; }
+    } else if (e.type === "boss") {
+      const angry = e.hp <= ENEMY.boss.hp / 2;
+      if (!e.vx) e.vx = 1;
+      e.x += e.vx * (angry ? 60 : 40) * dt;
+      if (e.x < 40 || e.x > VW - 40) { e.vx *= -1; e.x = clamp(e.x, 40, VW - 40); }
+      e.y = tc(3) + Math.sin(clock * 2) * 10;
+      e.fire -= dt;
+      if (e.fire <= 0) {
+        e.fire = angry ? 1.1 : 1.8;
+        const a = Math.atan2(P.y - e.y, P.x - e.x);
+        const spread = angry ? [-0.5, -0.25, 0, 0.25, 0.5] : [-0.3, 0, 0.3];
+        for (const da of spread) shots.push({ x: e.x, y: e.y + 6, vx: Math.cos(a + da) * 72, vy: Math.sin(a + da) * 72, life: 4 });
+        sfx("fire");
+      }
+    }
+
+    const size = def.size || 12;
+    if (overlap(e.x, e.y, size - 2, size - 2, P.x, P.y + 2, 10, 12)) hurtPlayer(def.dmg, e.x, e.y);
+  }
+
+  function burst(x, y, colors, n) {
+    for (let i = 0; i < n; i++) {
+      const a = rnd(0, Math.PI * 2), s = rnd(30, 90);
+      bits.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 30, life: rnd(0.3, 0.7), c: PAL[colors[i % colors.length]] });
+    }
+  }
+
+  // ================= Draw =================
+  function blit(name, x, y, flip = false, scale = 2, white = false) {
+    const s = spr(name, flip, white);
+    ctx.drawImage(s, Math.round(x - (s.width * scale) / 2), Math.round(y - (s.height * scale) / 2), s.width * scale, s.height * scale);
+  }
+  const frameOf = (v) => (Array.isArray(v) ? v[Math.floor(clock * 2.5) % v.length] : v);
+
+  function draw() {
+    ctx.imageSmoothingEnabled = false;
+    ctx.fillStyle = PAL.k;
+    ctx.fillRect(0, 0, VW, VH);
+    if (room) {
+      ctx.save();
+      ctx.translate(0, HUD);
+      const groundBm = TILES[room.ground].bm;
+      for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+        const t = TILES[map[r][c]];
+        const x = c * TS + 8, y = r * TS + 8;
+        if (t.over) { blit(frameOf(groundBm), x, y); blit(frameOf(t.over), x, y); }
+        else blit(frameOf(t.bm), x, y);
+      }
+
+      for (const it of items) {
+        const bob = Math.sin(it.t * 4) * 1.5;
+        const name = { gem: "gem", biggem: "biggem", heart: "heart", sword: "sword", vessel: "heart", oldkey: "oldkey",
+          bosskey: "bosskey", sunstone: "sunstone", "shop-potion": "potion", "shop-vessel": "heart" }[it.kind];
+        const big = it.kind === "vessel" || it.kind === "shop-vessel" || it.kind === "sunstone";
+        if (big) {
+          ctx.globalAlpha = 0.35 + Math.sin(clock * 5) * 0.15;
+          ctx.fillStyle = PAL.y;
+          ctx.beginPath(); ctx.arc(it.x, it.y + bob, 11, 0, Math.PI * 2); ctx.fill();
+          ctx.globalAlpha = 1;
+        }
+        blit(name, it.x, it.y + bob, false, big ? 2.5 : 2);
+        if (it.kind.startsWith("shop")) drawNumber(it.kind === "shop-potion" ? 15 : 40, it.x - 5, it.y + 12, PAL.y);
+      }
+
+      for (const n of npcs) blit(n.kind, n.x, n.y);
+
+      for (const e of enemies) {
+        const def = ENEMY[e.type];
+        const f = def.frames[Math.floor(e.frame * (e.type === "bat" ? 8 : 4)) % def.frames.length];
+        blit(f, e.x, e.y, e.vx < 0, 2, e.flash > 0 && Math.floor(e.flash * 20) % 2 === 1);
+      }
+
+      // Player and sword.
+      if (!(P.hurt > 0 && Math.floor(P.hurt * 14) % 2)) {
+        const step = Math.floor(P.walk * 7) % 2;
+        const frame = P.dir === "down" ? (step ? "heroDown2" : "heroDown1") : P.dir === "up" ? (step ? "heroUp2" : "heroUp1") : (step ? "heroSide2" : "heroSide1");
+        if (P.swing > 0 && P.dir === "up") drawSword();
+        blit(frame, P.x, P.y, P.dir === "left");
+        if (P.swing > 0 && P.dir !== "up") drawSword();
+      }
+
+      for (const s of shots) {
+        if (s.friendly) {
+          ctx.fillStyle = Math.floor(clock * 20) % 2 ? PAL.a : PAL.w;
+          const horiz = s.dir === "left" || s.dir === "right";
+          ctx.fillRect(Math.round(s.x - (horiz ? 6 : 2)), Math.round(s.y - (horiz ? 2 : 6)), horiz ? 12 : 4, horiz ? 4 : 12);
+        } else blit("fire", s.x, s.y + 2, Math.floor(clock * 10) % 2 === 1);
+      }
+      for (const b of bits) { ctx.fillStyle = b.c; ctx.fillRect(Math.round(b.x), Math.round(b.y), 2, 2); }
+
+      const boss = enemies.find((e) => e.type === "boss");
+      if (boss) {
+        ctx.fillStyle = PAL.k; ctx.fillRect(40, 4, 112, 6);
+        ctx.fillStyle = PAL.r; ctx.fillRect(41, 5, (110 * boss.hp) / ENEMY.boss.hp, 4);
+      }
+      ctx.restore();
+    }
+    drawHud();
+    if (fade) {
+      const p = fade.t / fade.dur;
+      ctx.globalAlpha = p < 0.5 ? p * 2 : (1 - p) * 2;
+      ctx.fillStyle = PAL.k; ctx.fillRect(0, HUD, VW, VH - HUD);
+      ctx.globalAlpha = 1;
+    }
+    out.imageSmoothingEnabled = false;
+    out.drawImage(buf, 0, 0, canvas.width, canvas.height);
+  }
+
+  function drawSword() {
+    const [fx, fy] = DIRS[P.dir];
+    const ext = P.swing > 0.18 ? 6 : 12; // quick thrust out
+    ctx.fillStyle = PAL.k;
+    if (fy) {
+      const x = P.x - 2 + (fy > 0 ? -1 : 2), y0 = fy > 0 ? P.y + 6 : P.y - 6 - ext;
+      ctx.fillRect(x - 1, y0 - 1, 4, ext + 2);
+      ctx.fillStyle = PAL.w; ctx.fillRect(x, y0, 2, ext);
+      ctx.fillStyle = PAL.y; ctx.fillRect(x - 2, fy > 0 ? y0 : y0 + ext - 2, 6, 2);
+    } else {
+      const y = P.y + 3, x0 = fx > 0 ? P.x + 6 : P.x - 6 - ext;
+      ctx.fillRect(x0 - 1, y - 1, ext + 2, 4);
+      ctx.fillStyle = PAL.w; ctx.fillRect(x0, y, ext, 2);
+      ctx.fillStyle = PAL.y; ctx.fillRect(fx > 0 ? x0 : x0 + ext - 2, y - 2, 2, 6);
+    }
+  }
+
+  function drawNumber(n, x, y, color) {
+    ctx.fillStyle = color;
+    let cx = x;
+    for (const ch of String(n)) {
+      DIGITS[ch].forEach((row, ry) => [...row].forEach((v, rx) => { if (v === "1") ctx.fillRect(cx + rx, y + ry, 1, 1); }));
+      cx += 4;
+    }
+  }
+
+  function drawHud() {
+    ctx.fillStyle = PAL.k; ctx.fillRect(0, 0, VW, HUD);
+    ctx.fillStyle = PAL.s; ctx.fillRect(0, HUD - 1, VW, 1);
+    // Hearts, in halves.
+    for (let i = 0; i < save.maxHp / 2; i++) {
+      const x = 4 + i * 9, y = 8;
+      ctx.drawImage(spr("heartEmpty"), x, y);
+      const fill = clamp(P.hp - i * 2, 0, 2);
+      if (fill === 2) ctx.drawImage(spr("heart"), x, y);
+      else if (fill === 1) { ctx.save(); ctx.beginPath(); ctx.rect(x, y, 4, 8); ctx.clip(); ctx.drawImage(spr("heart"), x, y); ctx.restore(); }
+    }
+    // Item slots.
+    const slot = (x, label, icon, count) => {
+      ctx.strokeStyle = PAL.d; ctx.lineWidth = 1; ctx.strokeRect(x + 0.5, 3.5, 15, 18);
+      ctx.fillStyle = PAL.k; ctx.fillRect(x + 4, 1, 8, 4);
+      ctx.fillStyle = label === "A" ? PAL.r : PAL.o;
+      ctx.fillRect(x + 5, 2, 6, 2);
+      if (icon) ctx.drawImage(spr(icon), x + 4, 8);
+      if (count != null) drawNumber(count, x + 12, 16, PAL.w);
+    };
+    slot(94, "A", save.sword ? "sword" : null);
+    slot(114, "B", save.potions ? "potion" : null, save.potions || null);
+    ctx.drawImage(spr("gem"), 136, 2);
+    drawNumber("x", 145, 6, PAL.e);
+    drawNumber(save.gems, 150, 6, PAL.w);
+    if (save.oldKey === 1) ctx.drawImage(spr("oldkey"), 136, 13);
+    if (save.bossKey === 1) ctx.drawImage(spr("bosskey"), 146, 13);
+    if (save.sunstone) ctx.drawImage(spr("sunstone"), 180, 13);
+  }
+
+  // ================= Overlays and flow =================
+  function showOverlay(kicker, title, html, buttons, hint = "") {
+    $("ov-kicker").textContent = kicker;
+    $("ov-title").textContent = title;
+    $("ov-text").innerHTML = html;
+    const row = $("ov-buttons");
+    row.textContent = "";
+    buttons.forEach(([label, fn], i) => {
+      const b = document.createElement("button");
+      b.className = "btn" + (i ? " alt" : "");
+      b.type = "button";
+      b.textContent = label;
+      b.addEventListener("click", () => { unlockAudio(); fn(); });
+      row.appendChild(b);
+    });
+    $("ov-hint").innerHTML = hint;
+    $("ov-hint").hidden = !hint;
+    $("overlay").hidden = false;
+    row.firstChild?.focus({ preventScroll: true });
+  }
+  const hideOverlay = () => { $("overlay").hidden = true; };
+
+  function startNew() {
+    save = freshSave();
+    P.hp = save.maxHp;
+    begin();
+  }
+  function begin() {
+    hideOverlay();
+    unlockAudio();
+    songName = "";
+    mode = "play";
+    lastArea = "";
+    enterRoom(save.room, save.x, save.y);
+  }
+  const fmtTime = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+  function win() {
+    mode = "win";
+    writeSave();
+    showOverlay("HOLLOWMERE IS SAVED", "The light returns",
+      `You beat the Cinder Warden in <b>${fmtTime(save.time)}</b> with <b>${save.gems} gems</b>, <b>${save.maxHp / 2} hearts</b> and <b>${save.deaths}</b> ${save.deaths === 1 ? "fall" : "falls"}.`,
+      [["Play again", startNew]]);
+  }
+
+  function titleScreen() {
+    mode = "title";
+    const s = loadSave()?.save;
+    const hint = "LEFT PAD: WALK · A: SWORD / TALK · B: POTION<br>KEYBOARD: ARROWS · Z · X";
+    if (s && !s.sunstone && (s.sword || s.time > 20)) {
+      showOverlay("A HOLLOWMERE TALE", "Mossblade",
+        `Welcome back. Saved in <b>${ROOMS[s.room]?.name || "the valley"}</b> after ${fmtTime(s.time)}.`,
+        [["Continue", () => { save = { ...freshSave(), ...s }; P.hp = save.maxHp; begin(); }], ["New game", startNew]], hint);
+    } else {
+      showOverlay("A HOLLOWMERE TALE", "Mossblade",
+        "The Cinder Warden has stolen the <b>Sunstone</b>, and the valley is wilting. Find a blade, open the Ember Ruins, and bring the light home.",
+        [["Start", startNew]], hint);
+    }
+  }
+
+  function togglePause() {
+    if (mode === "play") {
+      mode = "paused";
+      $("pause").setAttribute("aria-pressed", "true");
+      showOverlay("PAUSED", "Resting", `${room.name} · ${fmtTime(save.time)} · ${save.gems} gems`, [["Resume", togglePause]]);
+    } else if (mode === "paused") {
+      mode = "play";
+      $("pause").setAttribute("aria-pressed", "false");
+      hideOverlay();
+    }
+  }
+  $("pause").addEventListener("click", togglePause);
+  document.addEventListener("visibilitychange", () => { if (document.hidden && mode === "play") togglePause(); });
+
+  function syncPrefs() {
+    $("music").setAttribute("aria-pressed", String(prefs.music));
+    $("sound").setAttribute("aria-pressed", String(prefs.sound));
+  }
+  $("music").addEventListener("click", () => { unlockAudio(); prefs.music = !prefs.music; syncPrefs(); syncMusic(); writeSave(); });
+  $("sound").addEventListener("click", () => { unlockAudio(); prefs.sound = !prefs.sound; syncPrefs(); writeSave(); });
+
+  // ================= Layout and loop =================
+  function resize() {
+    const r = $("screen").getBoundingClientRect();
+    const scale = Math.max(0.5, Math.min(r.width / VW, r.height / VH));
+    const dpr = Math.min(window.devicePixelRatio || 1, 3);
+    canvas.style.width = Math.floor(VW * scale) + "px";
+    canvas.style.height = Math.floor(VH * scale) + "px";
+    canvas.width = Math.round(VW * scale * dpr);
+    canvas.height = Math.round(VH * scale * dpr);
+    draw();
+  }
+  new ResizeObserver(resize).observe($("screen"));
+
+  let last = 0;
+  function frame(t) {
+    const dt = Math.min(0.033, (t - last) / 1000 || 0);
+    last = t;
+    update(dt);
+    draw();
+    requestAnimationFrame(frame);
+  }
+
+  function boot(data) {
+    syncPrefs();
+    if (data?.save) {
+      save = { ...freshSave(), ...data.save };
+      P.hp = data.hp || save.maxHp;
+      enterRoom(data.room || save.room, data.x ?? save.x, data.y ?? save.y);
+      mode = "paused";
+      showOverlay("PAUSED", "Resting", "The page was updated. Pick up where you left off.", [["Resume", () => { unlockAudio(); songName = ""; playSong(room.music); togglePause(); }]]);
+    } else {
+      enterRoom("o:1,2", 5.5, 8, true);
+      titleScreen();
+    }
+    resize();
+    requestAnimationFrame(frame);
+  }
+  window.claude?.hot?.snapshot?.(() => ({ save, hp: P.hp, room: roomId, x: (P.x - 8) / TS, y: (P.y - 8) / TS }));
+  window.claude?.hot?.ready ? window.claude.hot.ready(boot) : boot(window.claude?.hot?.data ?? {});
+})();
+</script>
+<!-- ARTIFACT-END -->
+</body>
+</html>
