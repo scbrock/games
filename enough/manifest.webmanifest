@@ -1,0 +1,10 @@
+{
+  "name": "Enough",
+  "short_name": "Enough",
+  "start_url": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f2f0eb",
+  "theme_color": "#f2f0eb",
+  "icons": [{ "src": "icon-180.png", "sizes": "180x180", "type": "image/png" }]
+}
