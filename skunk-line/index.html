@@ -1,0 +1,845 @@
+<title>Skunk Line</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: a card table. Pegboard across the top, the table (starter, pile,
+   count, players) in the middle, your hand and the action at the bottom.
+   Deliberately single-theme: a lamp-lit felt table in either OS theme. */
+:root {
+  --felt: #17392d;
+  --felt-hi: #1f4a3a;
+  --rail: #0e241c;
+  --wood: #6b4226;
+  --wood-hi: #8a5a36;
+  --brass: #d8b25e;
+  --ink: #f3efe6;
+  --muted: #a9c0b4;
+  --card: #fbfaf6;
+  --card-ink: #1c1d22;
+  --red: #c0352b;
+  --line: rgba(243, 239, 230, .16);
+  --good: #8fd6a2;
+  --warn: #f0c46a;
+  color-scheme: dark;
+
+  --display: "Young Serif", Georgia, "Times New Roman", serif;
+  --body: Figtree, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+[hidden] { display: none !important; }
+body {
+  margin: 0;
+  background: var(--felt);
+  background-image: radial-gradient(ellipse at 50% 0%, var(--felt-hi), var(--felt) 70%);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 16px;
+  line-height: 1.4;
+  -webkit-tap-highlight-color: transparent;
+  min-height: 100%;
+}
+.app {
+  box-sizing: border-box;
+  max-width: 620px;
+  margin: 0 auto;
+  padding-block: 12px 28px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid;
+  gap: 12px;
+}
+header { display: flex; align-items: center; gap: 10px; }
+header h1 { margin: 0 auto 0 0; font-family: var(--display); font-weight: 400; font-size: 1.5rem; letter-spacing: .01em; }
+header h1 span { color: var(--brass); }
+.chip { font-size: .8rem; font-weight: 600; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+.btn {
+  font: inherit; font-weight: 700; font-size: .95rem;
+  padding: 11px 16px; border-radius: 10px; border: 0;
+  background: var(--brass); color: #2a1d08; cursor: pointer;
+  box-shadow: 0 3px 0 #8f6f2c;
+}
+.btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #8f6f2c; }
+.btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); box-shadow: none; }
+.btn.small { padding: 7px 11px; font-size: .85rem; }
+.btn:disabled { opacity: .45; cursor: default; transform: none; }
+button:focus-visible, input:focus-visible { outline: 3px solid var(--brass); outline-offset: 2px; }
+.panel { background: var(--rail); border: 1px solid var(--line); border-radius: 14px; padding: 14px; display: grid; gap: 10px; }
+.panel h2 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 1.25rem; }
+.muted { color: var(--muted); }
+p { margin: 0; }
+
+/* ----- Pegboard ----- */
+.board {
+  background: linear-gradient(180deg, var(--wood-hi), var(--wood));
+  border-radius: 12px;
+  padding: 10px 12px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .15), 0 8px 18px -10px rgba(0, 0, 0, .7);
+  display: grid;
+  gap: 6px;
+}
+.lane { display: grid; grid-template-columns: minmax(0, 5.5rem) 1fr 2.4rem; gap: 8px; align-items: center; }
+.lane .who { font-size: .82rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff5e6; }
+.lane .pts { font-family: var(--display); font-size: 1.1rem; text-align: right; color: #fff5e6; font-variant-numeric: tabular-nums; }
+.lane svg { width: 100%; height: 18px; display: block; overflow: visible; }
+.lane .track { fill: #3e2614; }
+.lane .hole { fill: #2a180b; }
+.lane .tick { fill: #c9a774; font-size: 6px; font-family: var(--body); }
+.lane .skunk { stroke: #f3efe6; stroke-width: .8; stroke-dasharray: 1.5 1.5; }
+.board .legend { display: flex; gap: 12px; font-size: .72rem; color: #e8d6bb; justify-content: flex-end; }
+
+/* ----- Players and table ----- */
+.players { display: flex; flex-wrap: wrap; gap: 6px; }
+.pl { display: flex; align-items: center; gap: 6px; padding: 5px 10px 5px 6px; border-radius: 999px; background: var(--rail); border: 1px solid var(--line); font-size: .85rem; }
+.pl i { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; box-shadow: inset 0 -1px 0 rgba(0, 0, 0, .35); }
+.pl b { font-weight: 600; }
+.pl small { color: var(--muted); }
+.pl.turn { border-color: var(--brass); box-shadow: 0 0 0 2px var(--brass); }
+.pl .tag { font-size: .68rem; font-weight: 700; padding: 1px 6px; border-radius: 6px; background: var(--brass); color: #2a1d08; }
+.pl .tag.go { background: var(--muted); }
+
+.table { display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: center; padding: 14px; border-radius: 16px; background: rgba(0, 0, 0, .18); border: 1px solid var(--line); min-height: 120px; }
+.starter { display: grid; justify-items: center; gap: 4px; font-size: .72rem; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; }
+.pile { position: relative; min-height: 96px; display: flex; align-items: center; }
+.pile .cardx { margin-left: -34px; }
+.pile .cardx:first-child { margin-left: 0; }
+.count { position: absolute; right: 0; top: -6px; font-family: var(--display); font-size: 2rem; line-height: 1; color: var(--brass); font-variant-numeric: tabular-nums; }
+.count small { display: block; font-family: var(--body); font-size: .65rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); text-align: right; }
+
+/* ----- Cards ----- */
+.cardx {
+  position: relative;
+  width: 62px; height: 88px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--card-ink);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, .25), 0 6px 14px -6px rgba(0, 0, 0, .6);
+  font-family: var(--display);
+  display: grid;
+  place-items: center;
+  user-select: none;
+}
+.cardx.red { color: var(--red); }
+.cardx .r { position: absolute; left: 6px; top: 4px; font-size: 1.15rem; line-height: 1; text-align: center; }
+.cardx .r span { display: block; font-size: .9rem; }
+.cardx .big { font-size: 2rem; line-height: 1; }
+.cardx.back { background: repeating-linear-gradient(45deg, #7a2b25 0 6px, #8d342c 6px 12px); border: 3px solid var(--card); color: transparent; }
+.cardx.sm { width: 44px; height: 62px; border-radius: 6px; }
+.cardx.sm .r { left: 4px; top: 3px; font-size: .9rem; }
+.cardx.sm .r span { font-size: .72rem; }
+.cardx.sm .big { font-size: 1.35rem; }
+.hand { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.hand button.cardx { border: 0; padding: 0; cursor: pointer; transition: transform 140ms ease-out; font: inherit; font-family: var(--display); }
+.hand button.cardx.sel { transform: translateY(-14px); box-shadow: 0 0 0 3px var(--brass), 0 10px 18px -8px rgba(0, 0, 0, .7); }
+.hand button.cardx:disabled { opacity: .45; cursor: default; }
+.you { display: grid; gap: 10px; }
+.prompt { text-align: center; font-weight: 600; }
+.prompt.turn { color: var(--brass); }
+.actions { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+
+/* ----- Show and log ----- */
+.show { display: grid; gap: 10px; }
+.score-card { display: grid; gap: 8px; padding: 12px; border-radius: 12px; background: var(--rail); border: 1px solid var(--line); }
+.score-card header { display: flex; align-items: baseline; gap: 8px; }
+.score-card header b { font-weight: 700; }
+.score-card header em { margin-left: auto; font-style: normal; font-family: var(--display); font-size: 1.4rem; color: var(--brass); }
+.score-card .cards { display: flex; gap: 6px; flex-wrap: wrap; }
+.score-card ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 2px; font-size: .88rem; color: var(--muted); }
+.score-card ul li { display: flex; justify-content: space-between; gap: 10px; }
+.score-card ul li b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+.log { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; font-size: .88rem; color: var(--muted); }
+.log li b { color: var(--ink); font-weight: 600; }
+
+/* ----- Lobby ----- */
+.seats { display: grid; gap: 6px; }
+.seat { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; background: rgba(255, 255, 255, .04); }
+.seat i { width: 14px; height: 14px; border-radius: 50%; }
+.seat span { flex: 1; min-width: 0; }
+.seat small { color: var(--muted); }
+.field { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+input[type="text"] { font: inherit; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: rgba(0, 0, 0, .25); color: var(--ink); flex: 1 1 160px; min-width: 0; }
+.toggle { display: flex; align-items: center; gap: 10px; font-weight: 600; }
+.toggle input { width: 20px; height: 20px; accent-color: var(--brass); }
+.banner { text-align: center; padding: 18px 14px; border-radius: 16px; background: var(--rail); border: 2px solid var(--brass); display: grid; gap: 8px; }
+.banner h2 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 1.9rem; color: var(--brass); text-wrap: balance; }
+details.rules { background: var(--rail); border: 1px solid var(--line); border-radius: 14px; }
+details.rules summary { cursor: pointer; padding: 12px 14px; font-weight: 600; }
+details.rules div { padding: 0 14px 14px; display: grid; gap: 8px; font-size: .92rem; color: var(--muted); }
+details.rules b { color: var(--ink); }
+.note { font-size: .85rem; color: var(--warn); }
+@media (max-width: 400px) {
+  .cardx { width: 54px; height: 78px; }
+  .cardx .big { font-size: 1.7rem; }
+  .pile .cardx { margin-left: -30px; }
+  .lane { grid-template-columns: minmax(0, 4.4rem) 1fr 2.2rem; }
+}
+@media (prefers-reduced-motion: reduce) { .hand button.cardx { transition: none; } }
+</style>
+
+<div class="app">
+  <header>
+    <h1>Skunk <span>Line</span></h1>
+    <span class="chip" id="hand-chip" hidden></span>
+  </header>
+
+  <div id="loading" class="panel"><p class="muted" id="loading-text">Setting up the table…</p></div>
+
+  <!-- Lobby -->
+  <section id="lobby" class="panel" hidden>
+    <h2>Who's playing?</h2>
+    <p class="muted">2 to 6 players. Everyone opens this page on their own phone and joins. The first person to join deals the game out.</p>
+    <div class="seats" id="seats"></div>
+    <div class="field" id="join-row">
+      <input type="text" id="name" maxlength="16" placeholder="Your name" aria-label="Your name">
+      <button class="btn" type="button" id="btn-join">Join</button>
+    </div>
+    <div class="actions" id="seat-actions" hidden>
+      <button class="btn ghost small" type="button" id="btn-leave">Leave</button>
+    </div>
+    <label class="toggle" id="teams-row" hidden><input type="checkbox" id="teams"> Play in partnerships</label>
+    <p class="muted" id="teams-note" hidden></p>
+    <button class="btn" type="button" id="btn-start" hidden>Start the game</button>
+    <p class="muted" id="wait-note" hidden></p>
+    <p class="note" id="readonly-note" hidden>You can watch, but you can't join yet. Ask the person who shared this page to invite you as an <b>Editor</b>.</p>
+  </section>
+
+  <!-- Game -->
+  <section id="game" hidden style="display:grid;gap:12px">
+    <div class="board" id="board"></div>
+    <div class="players" id="players"></div>
+    <div class="table">
+      <div class="starter"><div id="starter"></div><span id="starter-label">Starter</span></div>
+      <div class="pile" id="pile"></div>
+    </div>
+    <div id="over" class="banner" hidden></div>
+    <div class="you" id="you">
+      <p class="prompt" id="prompt"></p>
+      <div class="hand" id="hand"></div>
+      <div class="actions" id="actions"></div>
+    </div>
+    <div class="show" id="show" hidden></div>
+    <div class="panel">
+      <h2 style="font-size:1rem;font-family:var(--body);font-weight:700">Table talk</h2>
+      <ul class="log" id="log"></ul>
+    </div>
+    <div class="actions" id="host-actions" hidden>
+      <button class="btn ghost small" type="button" id="btn-end">End game</button>
+      <button class="btn small" type="button" id="btn-end-yes" hidden style="background:var(--red);color:#fff;box-shadow:none">Yes, end it for everyone</button>
+    </div>
+  </section>
+
+  <details class="rules">
+    <summary>How cribbage works here</summary>
+    <div>
+      <p><b>The deal.</b> Two players get 6 cards, everyone else 5. With 5 players the dealer gets 4; with 6, the dealer and the player before them get 4. Players with extra cards throw them to the dealer's crib, so every hand and the crib end up with 4. With 3 players one card from the deck joins the crib.</p>
+      <p><b>The cut.</b> The player after the dealer cuts the starter. A jack scores the dealer 2 ("his heels").</p>
+      <p><b>The play.</b> Take turns playing a card and adding to the count, never past 31. Score 2 for 15 or 31, 2 for a pair (6 for three, 12 for four), and the length of any run. If you can't play, say Go. The last person to play scores 1 (2 if they hit 31), and the count starts again.</p>
+      <p><b>The show.</b> Starting after the dealer, each hand is counted with the starter: 2 for each fifteen, 2 per pair, runs, a flush (4, or 5 with the starter; the crib needs all 5), and 1 for the jack of the starter's suit ("nobs"). The dealer counts last, then the crib. The app counts everything for you.</p>
+      <p><b>Winning.</b> First to 121 wins, the moment they reach it. Finishing below 91 is a skunk; below 61, a double skunk.</p>
+      <p><b>Partnerships.</b> With 4 or 6 players you can play in teams of two, sitting alternately. Partners share one peg.</p>
+    </div>
+  </details>
+</div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const DOC = "games/main";
+  const RANKS = "A23456789TJQK";
+  const SUITS = { S: "♠", H: "♥", D: "♦", C: "♣" };
+  const VS = "︎";
+  const PEGS = ["#e8c25a", "#e5554a", "#5aa3f0", "#f3efe6", "#7ad08f", "#c58cf0"];
+  const TARGET = 121;
+
+  // ================= Cards and scoring (pure) =================
+  const rankOf = (c) => RANKS.indexOf(c[0]);
+  const valueOf = (c) => Math.min(rankOf(c) + 1, 10);
+  const suitOf = (c) => c[1];
+  const label = (c) => (c[0] === "T" ? "10" : c[0]) + SUITS[c[1]] + VS;
+  function newDeck() {
+    const d = [];
+    for (const s of "SHDC") for (const r of RANKS) d.push(r + s);
+    const rnd = new Uint32Array(d.length);
+    crypto.getRandomValues(rnd);
+    for (let i = d.length - 1; i > 0; i--) { const j = rnd[i] % (i + 1); [d[i], d[j]] = [d[j], d[i]]; }
+    return d;
+  }
+  // Points for the card just played, given the current sequence and count.
+  function pegScore(seq, count) {
+    const out = [];
+    if (count === 15) out.push(["fifteen", 2]);
+    if (count === 31) out.push(["thirty-one", 2]);
+    const last = seq[seq.length - 1];
+    let k = 1;
+    while (k < seq.length && rankOf(seq[seq.length - 1 - k]) === rankOf(last)) k++;
+    if (k >= 2) out.push([k === 2 ? "a pair" : k === 3 ? "three of a kind" : "four of a kind", { 2: 2, 3: 6, 4: 12 }[k]]);
+    for (let L = seq.length; L >= 3; L--) {
+      const rs = seq.slice(-L).map(rankOf);
+      if (new Set(rs).size === L && Math.max(...rs) - Math.min(...rs) === L - 1) { out.push([`a run of ${L}`, L]); break; }
+    }
+    return out;
+  }
+  function scoreHand(cards, starter, isCrib) {
+    const all = [...cards, starter];
+    const items = [];
+    let fif = 0;
+    for (let m = 1; m < 32; m++) { let s = 0; for (let i = 0; i < 5; i++) if (m & (1 << i)) s += valueOf(all[i]); if (s === 15) fif++; }
+    if (fif) items.push([`Fifteen${fif > 1 ? "s ×" + fif : ""}`, fif * 2]);
+    let pairs = 0;
+    for (let i = 0; i < 5; i++) for (let j = i + 1; j < 5; j++) if (rankOf(all[i]) === rankOf(all[j])) pairs++;
+    if (pairs) items.push([pairs === 1 ? "Pair" : pairs === 3 ? "Three of a kind" : pairs === 6 ? "Four of a kind" : `Pairs ×${pairs}`, pairs * 2]);
+    const cnt = Array(13).fill(0);
+    all.forEach((c) => cnt[rankOf(c)]++);
+    for (let i = 0; i < 13;) {
+      if (!cnt[i]) { i++; continue; }
+      let j = i, mult = 1;
+      while (j < 13 && cnt[j]) { mult *= cnt[j]; j++; }
+      const len = j - i;
+      if (len >= 3) items.push([`Run of ${len}${mult > 1 ? " ×" + mult : ""}`, len * mult]);
+      i = j;
+    }
+    const s0 = suitOf(cards[0]);
+    if (cards.every((c) => suitOf(c) === s0)) {
+      if (suitOf(starter) === s0) items.push(["Flush of 5", 5]);
+      else if (!isCrib) items.push(["Flush", 4]);
+    }
+    if (cards.some((c) => c[0] === "J" && suitOf(c) === suitOf(starter))) items.push(["Nobs (jack of the starter's suit)", 1]);
+    return { items, total: items.reduce((a, [, p]) => a + p, 0) };
+  }
+
+  // ================= Game rules (pure, on a state object) =================
+  const clone = (x) => JSON.parse(JSON.stringify(x));
+  const n = (st) => st.order.length;
+  const idx = (st, uid) => st.order.indexOf(uid);
+  const teamCount = (st) => (st.teams ? n(st) / 2 : 0);
+  const keyOf = (st, uid) => (st.teams ? "team" + (idx(st, uid) % teamCount(st)) : uid);
+  const scoreKeys = (st) => (st.teams ? Array.from({ length: teamCount(st) }, (_, i) => "team" + i) : [...st.order]);
+  const nameOf = (st, uid) => st.seats[uid]?.name || "Someone";
+  const keyName = (st, key) => {
+    if (!key.startsWith("team")) return nameOf(st, key);
+    const t = +key.slice(4);
+    return st.order.filter((_, i) => i % teamCount(st) === t).map((u) => nameOf(st, u)).join(" & ");
+  };
+  const remaining = (st, uid) => {
+    const out = [...(st.hands[uid] || [])];
+    for (const c of [...(st.discards[uid] || []), ...(st.play.played[uid] || [])]) { const i = out.indexOf(c); if (i >= 0) out.splice(i, 1); }
+    return out;
+  };
+  const kept = (st, uid) => (st.hands[uid] || []).filter((c) => !(st.discards[uid] || []).includes(c));
+  const need = (st, uid) => Math.max(0, (st.hands[uid] || []).length - 4);
+  function say(st, text) { st.log = [...(st.log || []), { t: Date.now(), text }].slice(-30); }
+  function peg(st, uid, pts, why) {
+    if (st.winner || pts <= 0) return;
+    const k = keyOf(st, uid);
+    st.back[k] = st.scores[k];
+    st.scores[k] += pts;
+    say(st, `**${nameOf(st, uid)}** scores ${pts} for ${why}.`);
+    if (st.scores[k] >= TARGET) {
+      st.winner = k;
+      st.phase = "over";
+      st.status = "over";
+      say(st, `**${keyName(st, k)}** ${st.teams && k.startsWith("team") ? "win" : "wins"} the game!`);
+    }
+  }
+  function deal(st) {
+    const N = n(st), deck = newDeck();
+    const size = st.order.map((_, i) => {
+      if (N === 2) return 6;
+      if (N === 5 && i === st.dealer) return 4;
+      if (N === 6 && (i === st.dealer || i === (st.dealer + N - 1) % N)) return 4;
+      return 5;
+    });
+    const hands = {};
+    st.order.forEach((u) => { hands[u] = []; });
+    let more = true;
+    while (more) {
+      more = false;
+      for (let k = 1; k <= N; k++) {
+        const i = (st.dealer + k) % N;
+        if (hands[st.order[i]].length < size[i]) { hands[st.order[i]].push(deck.pop()); more = true; }
+      }
+    }
+    st.hands = hands;
+    st.cribExtra = N === 3 ? [deck.pop()] : [];
+    st.deck = deck;
+    st.discards = {};
+    st.starter = null;
+    st.show = null;
+    st.play = { seq: [], pile: [], count: 0, goes: [], turn: null, last: null, played: {} };
+    st.phase = "discard";
+    say(st, `Hand ${st.handNo}: **${nameOf(st, st.order[st.dealer])}** deals.`);
+  }
+  function allDiscarded(st) { return st.order.every((u) => (st.discards[u] || []).length === need(st, u)); }
+  function nextFrom(st, uid, useGoes) {
+    const i0 = idx(st, uid);
+    for (let k = 1; k <= n(st); k++) {
+      const u = st.order[(i0 + k) % n(st)];
+      if (remaining(st, u).length && !(useGoes && st.play.goes.includes(u))) return u;
+    }
+    return null;
+  }
+  // After a play or a Go: pass the turn, award the go point, or end the play.
+  function advance(st, actor) {
+    const p = st.play;
+    if (st.winner) return;
+    if (p.count === 31) {
+      p.seq = []; p.count = 0; p.goes = [];
+      p.turn = nextFrom(st, actor, false);
+    } else {
+      p.turn = nextFrom(st, actor, true);
+      if (!p.turn) {
+        const anyLeft = st.order.some((u) => remaining(st, u).length);
+        if (p.last) peg(st, p.last, 1, anyLeft ? "the go" : "the last card");
+        if (st.winner) return;
+        p.seq = []; p.count = 0; p.goes = [];
+        p.turn = p.last ? nextFrom(st, p.last, false) : null;
+      }
+    }
+    if (!p.turn) toShow(st);
+  }
+  function toShow(st) {
+    st.phase = "show";
+    const N = n(st), res = [];
+    for (let k = 1; k <= N; k++) {
+      const u = st.order[(st.dealer + k) % N];
+      res.push({ who: u, crib: false, cards: kept(st, u), ...scoreHand(kept(st, u), st.starter, false) });
+    }
+    const dealer = st.order[st.dealer];
+    const crib = [...st.order.flatMap((u) => st.discards[u] || []), ...(st.cribExtra || [])];
+    res.push({ who: dealer, crib: true, cards: crib, ...scoreHand(crib, st.starter, true) });
+    for (const r of res) { r.counted = !st.winner; peg(st, r.who, r.total, r.crib ? "the crib" : "their hand"); }
+    st.show = res;
+    if (!st.winner) say(st, "Hands counted. Deal again when everyone's ready.");
+  }
+  const actions = {
+    join(st, uid, { name }) {
+      if (st.status !== "lobby" || st.seats[uid] || Object.keys(st.seats).length >= 6) return false;
+      st.seats[uid] = { name: name.slice(0, 16), t: Date.now() };
+      if (!st.host) st.host = uid;
+      say(st, `**${st.seats[uid].name}** joined.`);
+    },
+    rename(st, uid, { name }) { if (!st.seats[uid]) return false; st.seats[uid].name = name.slice(0, 16); },
+    leave(st, uid) {
+      if (st.status !== "lobby" || !st.seats[uid]) return false;
+      say(st, `**${nameOf(st, uid)}** left.`);
+      delete st.seats[uid];
+      if (st.host === uid) st.host = Object.entries(st.seats).sort((a, b) => a[1].t - b[1].t)[0]?.[0] || null;
+    },
+    start(st, uid, { teams }) {
+      const N = Object.keys(st.seats).length;
+      if (st.status !== "lobby" || st.host !== uid || N < 2) return false;
+      st.order = Object.entries(st.seats).sort((a, b) => a[1].t - b[1].t).map(([u]) => u);
+      st.teams = !!teams && (N === 4 || N === 6);
+      st.scores = {}; st.back = {};
+      for (const k of scoreKeys(st)) { st.scores[k] = 0; st.back[k] = 0; }
+      st.status = "playing"; st.winner = null; st.handNo = 1;
+      st.dealer = Math.floor(Math.random() * N);
+      st.log = [];
+      say(st, "New game. First to 121 wins.");
+      deal(st);
+    },
+    discard(st, uid, { cards }) {
+      if (st.phase !== "discard" || !st.order.includes(uid)) return false;
+      if ((st.discards[uid] || []).length || cards.length !== need(st, uid)) return false;
+      if (!cards.every((c) => st.hands[uid].includes(c))) return false;
+      st.discards[uid] = cards;
+      say(st, `**${nameOf(st, uid)}** threw ${cards.length === 1 ? "a card" : cards.length + " cards"} to the crib.`);
+      if (allDiscarded(st)) st.phase = "cut";
+    },
+    cut(st, uid) {
+      const cutter = st.order[(st.dealer + 1) % n(st)];
+      if (st.phase !== "cut" || uid !== cutter) return false;
+      const i = Math.floor(Math.random() * st.deck.length);
+      st.starter = st.deck[i];
+      say(st, `**${nameOf(st, uid)}** cuts the ${label(st.starter)}.`);
+      if (st.starter[0] === "J") peg(st, st.order[st.dealer], 2, "his heels");
+      if (st.winner) return;
+      st.phase = "play";
+      st.play.turn = cutter;
+    },
+    play(st, uid, { card }) {
+      const p = st.play;
+      if (st.phase !== "play" || p.turn !== uid) return false;
+      if (!remaining(st, uid).includes(card) || p.count + valueOf(card) > 31) return false;
+      p.seq = [...p.seq, card];
+      p.pile = [...p.pile, card];
+      p.count += valueOf(card);
+      p.played[uid] = [...(p.played[uid] || []), card];
+      p.last = uid;
+      const pts = pegScore(p.seq, p.count);
+      const total = pts.reduce((a, [, x]) => a + x, 0);
+      if (total) peg(st, uid, total, `${pts.map(([w]) => w).join(" and ")} with ${label(card)} (${p.count})`);
+      else say(st, `**${nameOf(st, uid)}** plays ${label(card)} (${p.count}).`);
+      advance(st, uid);
+    },
+    go(st, uid) {
+      const p = st.play;
+      if (st.phase !== "play" || p.turn !== uid) return false;
+      if (remaining(st, uid).some((c) => p.count + valueOf(c) <= 31)) return false;
+      p.goes = [...p.goes, uid];
+      say(st, `**${nameOf(st, uid)}** says go.`);
+      advance(st, uid);
+    },
+    next(st, uid, { handNo }) {
+      if (st.phase !== "show" || st.handNo !== handNo || !st.order.includes(uid)) return false;
+      st.handNo++;
+      st.dealer = (st.dealer + 1) % n(st);
+      deal(st);
+    },
+    newGame(st, uid) {
+      if (st.host !== uid || st.status === "lobby") return false;
+      st.status = "lobby"; st.phase = null; st.winner = null; st.show = null;
+      st.hands = {}; st.discards = {}; st.starter = null;
+      say(st, "Back to the lobby. Join and start a new game.");
+    },
+  };
+  function emptyState() {
+    return { v: 1, status: "lobby", host: null, seats: {}, order: [], teams: false, scores: {}, back: {}, handNo: 0, dealer: 0,
+      phase: null, hands: {}, discards: {}, cribExtra: [], deck: [], starter: null, show: null, winner: null,
+      play: { seq: [], pile: [], count: 0, goes: [], turn: null, last: null, played: {} }, log: [] };
+  }
+
+  // ================= Connection =================
+  let db = null, me = null, ref = null, S = null, canWrite = null, userApi = null;
+  let selected = [];
+  let busy = false;
+
+  async function act(name, args = {}) {
+    if (busy) return;
+    busy = true;
+    try {
+      // Take a short lease so two phones never write the game at the same moment.
+      for (let tries = 0; tries < 12; tries++) {
+        let got = true;
+        try { got = (await ref.acquire({ holder: me, ttlMs: 1000 })).acquired; }
+        catch (e) { if (!["capability_removed", "capability_disabled"].includes(e?.code)) throw e; }
+        if (got) break;
+        await new Promise((r) => setTimeout(r, 250 + Math.random() * 200));
+      }
+      const snap = await ref.get();
+      const st = snap.exists ? clone(snap.data()) : emptyState();
+      if (actions[name](st, me, args) === false) { render(S); return; }
+      st.updated = Date.now();
+      await ref.set(st);
+      selected = [];
+    } catch (e) {
+      if (e?.code === "invalid_argument") { canWrite = false; render(S); }
+      else if (e?.code === "quota_exceeded") flash("The game storage is full. Ask the owner to clear it.");
+      else flash("That didn't go through. Check your connection and try again.");
+    } finally { busy = false; }
+  }
+  function flash(msg) { $("prompt").textContent = msg; }
+
+  // ================= Rendering =================
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const bold = (s) => esc(s).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
+  function cardEl(c, { tag = "div", small = false, back = false } = {}) {
+    const el = document.createElement(tag);
+    el.className = "cardx" + (small ? " sm" : "") + (back ? " back" : "") + (!back && "HD".includes(c[1]) ? " red" : "");
+    if (tag === "button") el.type = "button";
+    if (!back) {
+      const r = c[0] === "T" ? "10" : c[0];
+      el.innerHTML = `<span class="r">${r}<span>${SUITS[c[1]]}${VS}</span></span><span class="big">${SUITS[c[1]]}${VS}</span>`;
+      el.setAttribute("aria-label", `${({ A: "Ace", T: "10", J: "Jack", Q: "Queen", K: "King" })[c[0]] || c[0]} of ${({ S: "spades", H: "hearts", D: "diamonds", C: "clubs" })[c[1]]}`);
+    } else el.setAttribute("aria-label", "Face-down card");
+    return el;
+  }
+  const colorOf = (st, key) => PEGS[scoreKeys(st).indexOf(key) % PEGS.length];
+
+  function render(st) {
+    S = st;
+    $("loading").hidden = true;
+    if (!st || st.status === "lobby") return renderLobby(st || emptyState());
+    $("lobby").hidden = true;
+    $("game").hidden = false;
+    $("hand-chip").hidden = false;
+    $("hand-chip").textContent = `Hand ${st.handNo}`;
+    renderBoard(st);
+    renderPlayers(st);
+    renderTable(st);
+    renderYou(st);
+    renderShow(st);
+    renderLog(st);
+    $("host-actions").hidden = !(st.host === me && st.status === "playing");
+  }
+
+  function renderLobby(st) {
+    $("game").hidden = true;
+    $("lobby").hidden = false;
+    $("hand-chip").hidden = true;
+    const seated = Object.entries(st.seats).sort((a, b) => a[1].t - b[1].t);
+    const box = $("seats");
+    box.textContent = "";
+    if (!seated.length) box.innerHTML = '<p class="muted">Nobody has joined yet.</p>';
+    seated.forEach(([u, s], i) => {
+      const row = document.createElement("div");
+      row.className = "seat";
+      row.innerHTML = `<i style="background:${PEGS[i]}"></i><span></span><small></small>`;
+      row.querySelector("span").textContent = s.name;
+      row.querySelector("small").textContent = [u === st.host ? "deals the game" : "", u === me ? "you" : ""].filter(Boolean).join(" · ");
+      box.appendChild(row);
+    });
+    const mine = !!st.seats[me];
+    const full = seated.length >= 6;
+    $("join-row").hidden = mine || full || canWrite === false;
+    $("seat-actions").hidden = !mine;
+    $("readonly-note").hidden = canWrite !== false;
+    const host = st.host === me;
+    const N = seated.length;
+    $("teams-row").hidden = !(host && (N === 4 || N === 6));
+    $("teams-note").hidden = $("teams-row").hidden || !$("teams").checked;
+    if (!$("teams-note").hidden) {
+      const T = N / 2;
+      $("teams-note").textContent = "Partners: " + Array.from({ length: T }, (_, t) => seated.filter((_, i) => i % T === t).map(([, s]) => s.name).join(" & ")).join(" vs ") + ".";
+    }
+    $("btn-start").hidden = !host;
+    $("btn-start").disabled = N < 2;
+    $("btn-start").textContent = N < 2 ? "Waiting for at least 2 players" : `Start the game with ${N} players`;
+    $("wait-note").hidden = host || !mine;
+    $("wait-note").textContent = st.host ? `Waiting for ${st.seats[st.host]?.name || "the first player"} to start the game.` : "";
+  }
+
+  function renderBoard(st) {
+    const box = $("board");
+    box.textContent = "";
+    for (const k of scoreKeys(st)) {
+      const lane = document.createElement("div");
+      lane.className = "lane";
+      const col = colorOf(st, k);
+      const W = 300, x = (v) => 4 + (Math.min(v, TARGET) / TARGET) * (W - 8);
+      let holes = "";
+      for (let v = 5; v < TARGET; v += 5) holes += `<circle class="hole" cx="${x(v)}" cy="9" r="1.1"/>`;
+      const ticks = [30, 60, 90].map((v) => `<text class="tick" x="${x(v)}" y="20" text-anchor="middle">${v}</text>`).join("");
+      lane.innerHTML = `<span class="who"></span>
+        <svg viewBox="0 0 ${W} 18" preserveAspectRatio="none" aria-hidden="true">
+          <rect class="track" x="0" y="5" width="${W}" height="8" rx="4"/>${holes}
+          <line class="skunk" x1="${x(91)}" x2="${x(91)}" y1="3" y2="15"/>${ticks}
+          <circle cx="${x(st.back[k] || 0)}" cy="9" r="3.4" fill="${col}" opacity=".45"/>
+          <circle cx="${x(st.scores[k] || 0)}" cy="9" r="4.2" fill="${col}" stroke="#2a180b" stroke-width="1"/>
+        </svg><span class="pts"></span>`;
+      lane.querySelector(".who").textContent = keyName(st, k);
+      lane.querySelector(".pts").textContent = st.scores[k] || 0;
+      lane.setAttribute("aria-label", `${keyName(st, k)}: ${st.scores[k] || 0} points`);
+      box.appendChild(lane);
+    }
+    const leg = document.createElement("div");
+    leg.className = "legend";
+    leg.textContent = "Dashed line: skunk line (91) · first to 121";
+    box.appendChild(leg);
+  }
+
+  function renderPlayers(st) {
+    const box = $("players");
+    box.textContent = "";
+    st.order.forEach((u, i) => {
+      const el = document.createElement("div");
+      el.className = "pl" + (st.phase === "play" && st.play.turn === u ? " turn" : "");
+      const left = st.phase === "play" ? remaining(st, u).length : null;
+      el.innerHTML = `<i style="background:${colorOf(st, keyOf(st, u))}"></i><b></b><small></small>`;
+      el.querySelector("b").textContent = nameOf(st, u) + (u === me ? " (you)" : "");
+      const bits = [];
+      if (st.phase === "discard") bits.push((st.discards[u] || []).length === need(st, u) ? "ready" : "choosing");
+      if (left !== null) bits.push(`${left} card${left === 1 ? "" : "s"}`);
+      el.querySelector("small").textContent = bits.join(" · ");
+      if (i === st.dealer) { const t = document.createElement("span"); t.className = "tag"; t.textContent = "Dealer"; el.appendChild(t); }
+      if (st.phase === "play" && st.play.goes.includes(u)) { const t = document.createElement("span"); t.className = "tag go"; t.textContent = "Go"; el.appendChild(t); }
+      box.appendChild(el);
+    });
+  }
+
+  function renderTable(st) {
+    const sbox = $("starter");
+    sbox.textContent = "";
+    sbox.appendChild(st.starter ? cardEl(st.starter) : cardEl("AS", { back: true }));
+    $("starter-label").textContent = st.starter ? "Starter" : "Deck";
+    const pile = $("pile");
+    pile.textContent = "";
+    if (st.phase === "play" || (st.phase === "over" && st.play.seq.length)) {
+      st.play.seq.forEach((c) => pile.appendChild(cardEl(c)));
+      const cnt = document.createElement("div");
+      cnt.className = "count";
+      cnt.innerHTML = `${st.play.count}<small>count</small>`;
+      pile.appendChild(cnt);
+      if (!st.play.seq.length) { const p = document.createElement("p"); p.className = "muted"; p.textContent = "New count. Lead any card."; pile.prepend(p); }
+    } else {
+      const p = document.createElement("p");
+      p.className = "muted";
+      const dealer = nameOf(st, st.order[st.dealer]);
+      p.textContent = st.phase === "discard" ? `Everyone throws to ${dealer}'s crib.` : st.phase === "cut" ? `${nameOf(st, st.order[(st.dealer + 1) % n(st)])} cuts the deck.` : st.phase === "show" ? `Counting hands. The crib is ${dealer}'s.` : "";
+      pile.appendChild(p);
+    }
+    const over = $("over");
+    over.hidden = st.status !== "over";
+    if (st.status === "over") {
+      const loser = scoreKeys(st).filter((k) => k !== st.winner);
+      const skunks = loser.filter((k) => st.scores[k] < 61).map((k) => `${keyName(st, k)} got double-skunked`)
+        .concat(loser.filter((k) => st.scores[k] >= 61 && st.scores[k] < 91).map((k) => `${keyName(st, k)} got skunked`));
+      over.innerHTML = `<h2></h2><p class="muted"></p>`;
+      over.querySelector("h2").textContent = `${keyName(st, st.winner)} ${st.teams ? "win" : "wins"}!`;
+      over.querySelector("p").textContent = (skunks.length ? skunks.join(". ") + ". " : "") + "Final pegs: " + scoreKeys(st).map((k) => `${keyName(st, k)} ${st.scores[k]}`).join(", ") + ".";
+      if (st.host === me) {
+        const b = document.createElement("button");
+        b.className = "btn"; b.type = "button"; b.textContent = "Back to the lobby for a new game";
+        b.addEventListener("click", () => act("newGame"));
+        over.appendChild(b);
+      } else {
+        const p = document.createElement("p"); p.className = "muted";
+        p.textContent = `${st.seats[st.host]?.name || "The first player"} can start a new game.`;
+        over.appendChild(p);
+      }
+    }
+  }
+
+  function renderYou(st) {
+    const seated = st.order.includes(me);
+    const hand = $("hand"), acts = $("actions"), prompt = $("prompt");
+    hand.textContent = ""; acts.textContent = "";
+    prompt.className = "prompt";
+    $("you").hidden = st.status === "over";
+    if (!seated) { prompt.textContent = "You're watching this game."; return; }
+    const ph = st.phase;
+    const button = (text, fn, ghost) => { const b = document.createElement("button"); b.type = "button"; b.className = "btn" + (ghost ? " ghost" : ""); b.textContent = text; b.addEventListener("click", fn); acts.appendChild(b); return b; };
+
+    if (ph === "discard") {
+      const k = need(st, me);
+      const done = (st.discards[me] || []).length === k;
+      const cards = done ? kept(st, me) : st.hands[me];
+      cards.forEach((c) => {
+        const b = cardEl(c, { tag: "button" });
+        if (selected.includes(c)) b.classList.add("sel");
+        b.disabled = done || k === 0;
+        b.addEventListener("click", () => {
+          selected = selected.includes(c) ? selected.filter((x) => x !== c) : [...selected, c].slice(-k);
+          renderYou(S);
+        });
+        hand.appendChild(b);
+      });
+      const dealerName = st.order[st.dealer] === me ? "your" : `${nameOf(st, st.order[st.dealer])}'s`;
+      if (k === 0) prompt.textContent = `You were dealt 4 cards, so you keep them all. Waiting for the others.`;
+      else if (done) prompt.textContent = "Waiting for everyone to throw to the crib.";
+      else {
+        prompt.textContent = `Pick ${k === 1 ? "1 card" : k + " cards"} for ${dealerName} crib.`;
+        prompt.classList.add("turn");
+        const b = button(`Throw to the crib`, () => act("discard", { cards: selected }));
+        b.disabled = selected.length !== k;
+      }
+      return;
+    }
+    if (ph === "cut") {
+      kept(st, me).forEach((c) => hand.appendChild(cardEl(c)));
+      const cutter = st.order[(st.dealer + 1) % n(st)];
+      if (cutter === me) { prompt.textContent = "Your cut."; prompt.classList.add("turn"); button("Cut the deck", () => act("cut")); }
+      else prompt.textContent = `Waiting for ${nameOf(st, cutter)} to cut.`;
+      return;
+    }
+    if (ph === "play") {
+      const mine = remaining(st, me);
+      const myTurn = st.play.turn === me;
+      const canPlay = mine.filter((c) => st.play.count + valueOf(c) <= 31);
+      mine.forEach((c) => {
+        const b = cardEl(c, { tag: "button" });
+        b.disabled = !myTurn || !canPlay.includes(c);
+        b.addEventListener("click", () => act("play", { card: c }));
+        hand.appendChild(b);
+      });
+      if (!mine.length) prompt.textContent = "You've played all your cards.";
+      else if (!myTurn) prompt.textContent = `${nameOf(st, st.play.turn)} to play.`;
+      else if (canPlay.length) { prompt.textContent = `Your turn. Count is ${st.play.count}. Tap a card to play it.`; prompt.classList.add("turn"); }
+      else { prompt.textContent = `Nothing fits under 31 (count ${st.play.count}).`; prompt.classList.add("turn"); button("Say Go", () => act("go")); }
+      return;
+    }
+    if (ph === "show") {
+      prompt.textContent = "All hands are shown below.";
+      button("Deal the next hand", () => act("next", { handNo: st.handNo }));
+    }
+  }
+
+  function renderShow(st) {
+    const box = $("show");
+    box.hidden = !(st.show && (st.phase === "show" || st.phase === "over"));
+    box.textContent = "";
+    if (box.hidden) return;
+    for (const r of st.show) {
+      const el = document.createElement("div");
+      el.className = "score-card";
+      el.innerHTML = `<header><b></b><span class="muted"></span><em></em></header><div class="cards"></div><ul></ul>`;
+      el.querySelector("b").textContent = r.crib ? `${nameOf(st, r.who)}'s crib` : nameOf(st, r.who);
+      el.querySelector("span").textContent = r.counted ? "" : "not counted, game over";
+      el.querySelector("em").textContent = r.total;
+      r.cards.forEach((c) => el.querySelector(".cards").appendChild(cardEl(c, { small: true })));
+      const st0 = cardEl(st.starter, { small: true }); st0.style.opacity = ".7"; st0.title = "Starter";
+      el.querySelector(".cards").appendChild(st0);
+      const ul = el.querySelector("ul");
+      if (!r.items.length) ul.innerHTML = "<li>Nineteen. (Nothing scores.)</li>";
+      for (const [what, pts] of r.items) { const li = document.createElement("li"); li.innerHTML = `<span></span><b>${pts}</b>`; li.firstChild.textContent = what; ul.appendChild(li); }
+      box.appendChild(el);
+    }
+  }
+
+  let lastLogT = 0;
+  function renderLog(st) {
+    const ul = $("log");
+    ul.textContent = "";
+    for (const l of (st.log || []).slice(-6).reverse()) { const li = document.createElement("li"); li.innerHTML = bold(l.text); ul.appendChild(li); }
+    const newest = st.log?.[st.log.length - 1]?.t || 0;
+    if (newest > lastLogT && lastLogT) chime(st);
+    lastLogT = newest;
+  }
+
+  // A soft chime when it becomes your turn.
+  let actx = null;
+  document.addEventListener("pointerdown", () => { if (!actx) try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch {} }, { once: true });
+  let wasMyTurn = false;
+  function chime(st) {
+    const mine = (st.phase === "play" && st.play.turn === me) || (st.phase === "cut" && st.order[(st.dealer + 1) % n(st)] === me);
+    if (mine && !wasMyTurn && actx) {
+      const t = actx.currentTime;
+      [660, 880].forEach((f, i) => { const o = actx.createOscillator(), g = actx.createGain(); o.frequency.value = f; g.gain.setValueAtTime(.06, t + i * .12); g.gain.exponentialRampToValueAtTime(.0001, t + i * .12 + .25); o.connect(g).connect(actx.destination); o.start(t + i * .12); o.stop(t + i * .12 + .3); });
+    }
+    wasMyTurn = mine;
+    document.title = mine ? "Your turn · Skunk Line" : "Skunk Line";
+  }
+
+  // ================= Lobby controls =================
+  $("btn-join").addEventListener("click", () => {
+    const name = $("name").value.trim();
+    if (!name) { $("name").focus(); return; }
+    try { localStorage.setItem("skunk-line-name", name); } catch {}
+    act("join", { name });
+  });
+  $("name").addEventListener("keydown", (e) => { if (e.key === "Enter") $("btn-join").click(); });
+  $("btn-leave").addEventListener("click", () => act("leave"));
+  $("teams").addEventListener("change", () => renderLobby(S || emptyState()));
+  $("btn-start").addEventListener("click", () => act("start", { teams: $("teams").checked }));
+  $("btn-end").addEventListener("click", () => { $("btn-end-yes").hidden = false; });
+  $("btn-end-yes").addEventListener("click", () => { $("btn-end-yes").hidden = true; act("newGame"); });
+
+  // ================= Boot =================
+  async function boot() {
+    try { $("name").value = localStorage.getItem("skunk-line-name") || ""; } catch {}
+    const c = window.claude;
+    [db, userApi] = c?.use ? await Promise.all([c.use("db"), c.use("user")]) : [null, null];
+    if (!db || !userApi) {
+      $("loading-text").textContent = "Open this page in the Claude app or on claude.ai, signed in, to play. Each player needs their own phone and an invitation to this page.";
+      return;
+    }
+    me = await userApi.id();
+    if (!me) { $("loading-text").textContent = "Sign in to Claude to take a seat at the table."; return; }
+    canWrite = await userApi.can("data.write");
+    if (!$("name").value) { const nm = await userApi.name(); if (nm) $("name").value = nm.split(" ")[0].slice(0, 16); }
+    ref = db.doc(DOC);
+    const timer = setTimeout(() => { if (!S) $("loading-text").textContent = "Still connecting to the table… Check your connection."; }, 10000);
+    ref.onSnapshot((snap) => {
+      if (!snap.metadata.fromCache) clearTimeout(timer);
+      render(snap.exists ? snap.data() : emptyState());
+    }, (e) => {
+      clearTimeout(timer);
+      $("loading").hidden = false;
+      $("loading-text").textContent = e.code === "revoked" ? "This table is no longer available to you." : "Lost the connection to the table. Reload the page to reconnect.";
+    });
+  }
+  window.SkunkLine = { pegScore, scoreHand, actions, emptyState, remaining };
+  boot();
+})();
+</script>
