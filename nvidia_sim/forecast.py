@@ -97,12 +97,53 @@ def drawdown_episodes(px, tickers, thresh=-0.25, max_days_from_high=30, gap=126)
     return pd.DataFrame(rows)
 
 
+SCENARIO_WEIGHTS = {  # judgment, edit freely: see REPORT.md section 6
+    "S1 leadership transition, business intact": 0.70,
+    "S2 legal/regulatory crisis, real business": 0.27,
+    "S3 solvency failure / fraudulent business": 0.03,
+}
+H_LABEL = {24: "1m", 65: "3m", 129: "6m"}
+
+
+def scenario_mixture(ens, px, horizons, n, rng, weights=None):
+    """NVDA outcome as a mixture over what kind of CEO exit this turns out to be.
+
+    S1: backtested ensemble + 50%-shrunk median abnormal drift of comparable S1 exits.
+    S2/S3: NVDA beta x bootstrapped Nasdaq h-day return + an abnormal return drawn from the
+           comparable S2/S3 cases (including companies that failed), with kernel jitter.
+    """
+    import comparable_events as ce
+    weights = weights or SCENARIO_WEIGHTS
+    cmp_ = ce.build()
+    cmp_ = cmp_[cmp_.comparable]
+    lr = np.log(px[["NVDA", "^IXIC"]].dropna()).diff().dropna().iloc[-250:]
+    beta = np.cov(lr["NVDA"], lr["^IXIC"])[0, 1] / lr["^IXIC"].var()
+    lc = np.log(px["^IXIC"].dropna())
+    out, comp = {}, {}
+    for h in horizons:
+        k = H_LABEL[h]
+        mkt_h = (lc.shift(-h) - lc).dropna().to_numpy()
+        counts = rng.multinomial(n, [weights[s] for s in weights])
+        parts = []
+        for (sc, w), c in zip(weights.items(), counts):
+            ab = cmp_.loc[cmp_.scenario == sc, f"ab_{k}"].dropna().to_numpy()
+            if sc.startswith("S1"):
+                x = rng.choice(ens[h], c) + 0.5 * np.median(ab)
+            else:
+                x = beta * rng.choice(mkt_h, c) + rng.choice(ab, c) + rng.normal(0, 0.08 * np.sqrt(h / 63), c)
+            comp.setdefault(sc, {})[h] = x
+            parts.append(x)
+        out[h] = rng.permutation(np.concatenate(parts))
+    return out, comp, beta
+
+
 def q(x, spot):
     p = spot * np.exp(x)
     return {"p5": np.quantile(p, .05), "p25": np.quantile(p, .25), "median": np.median(p),
             "p75": np.quantile(p, .75), "p95": np.quantile(p, .95),
             "P(<150)": np.mean(p < 150), "P(<130)": np.mean(p < 130), "P(>200)": np.mean(p > 200),
-            "P(>ATH 239)": np.mean(p > ATH), "P(up)": np.mean(p > spot)}
+            "P(>ATH 239)": np.mean(p > ATH), "P(up)": np.mean(p > spot), "P(<100)": np.mean(p < 100),
+            "P(<=-50%)": np.mean(p <= spot / 2)}
 
 
 def main():
@@ -134,6 +175,20 @@ def main():
     ens = Ensemble(models, w).forecast(ctx, horizons, N, rng)
     samples["Ensemble (no event adj.)"] = ens
     samples["Ensemble + CEO-exit adj."] = {h: ens[h] + taper[h] for h in horizons}
+    mix, comp, beta = scenario_mixture(ens, px, horizons, N, rng)
+    samples["Scenario mix (incl. failed-company analogs)"] = mix
+    for sc, d in comp.items():
+        samples[f"  only {sc}"] = d
+    sens = []
+    for w2, w3 in ((0.10, 0.0), (0.10, 0.03), (0.27, 0.03), (0.27, 0.10), (0.50, 0.03), (0.50, 0.10)):
+        w = {"S1 leadership transition, business intact": 1 - w2 - w3,
+             "S2 legal/regulatory crisis, real business": w2, "S3 solvency failure / fraudulent business": w3}
+        m, _, _ = scenario_mixture(ens, px, horizons, 20000, rng, w)
+        h = horizons[-1]
+        sens.append({"w_S2": w2, "w_S3": w3, **{k: round(v, 3) for k, v in q(m[h], spot).items()
+                                                 if k in ("median", "p5", "P(<130)", "P(<100)", "P(<=-50%)", "P(>ATH 239)")}})
+    res["scenario_sensitivity_6m"] = sens
+    res["nvda_beta_nasdaq"] = round(float(beta), 2)
     for e, h in zip(EXPIRIES, horizons):
         s, atm, T = implied_dist(opts, e, spot, asof, N, rng)
         samples.setdefault("Options-implied (risk-neutral)", {})[h] = np.log(s / spot)
@@ -162,7 +217,7 @@ def main():
     }
 
     nv = drawdown_episodes(px, ["NVDA"], thresh=-0.30, max_days_from_high=40)
-    mega = drawdown_episodes(px, UNIVERSE, thresh=-0.25, max_days_from_high=30)
+    mega = drawdown_episodes(px, UNIVERSE + ["VIAV"], thresh=-0.25, max_days_from_high=30)  # VIAV = JDS Uniphase history
     res["horizons"] = dict(zip(EXPIRIES, horizons))
     res["ceo_adjustment_log"] = {h: round(v, 4) for h, v in taper.items()}
     res["mega_episode_summary"] = {
@@ -183,8 +238,8 @@ def main():
 
     # ---- charts
     fig, ax = plt.subplots(1, 3, figsize=(16, 4.4))
-    show = ["Ensemble + CEO-exit adj.", "Options-implied (risk-neutral)", "GJR-GARCH(1,1)-t", "State analogs (k-NN, cross-section)"]
-    cols = ["#4C72B0", "#C44E52", "#8172B2", "#55A868"]
+    show = ["Ensemble + CEO-exit adj.", "Scenario mix (incl. failed-company analogs)", "Options-implied (risk-neutral)"]
+    cols = ["#4C72B0", "#DD8452", "#C44E52"]
     for a, e, h in zip(ax, EXPIRIES, horizons):
         bins = np.linspace(40, 360, 140)
         for nm, col in zip(show, cols):

@@ -24,15 +24,39 @@
 
 The leadership overhang is real in the first month and fades statistically after that.
 
+**a2) Comparable exits, *including companies that failed*** (`comparable_events.py`). Survivorship bias matters here because Yahoo has no data for delisted companies. The non-survivors were therefore hand-compiled from news reports, with the source and confidence level recorded for each row (`data/comparable_ceo_events.csv`). The terminal outcomes (bankruptcy, seizure, rescue price) are certain; interim prices are approximate.
+
+Selection rules, applied to every candidate:
+1. The exit was abrupt, forced, scandal-driven, or a founder transition.
+2. The stock was at least 20% below its 52-week high at exit.
+3. The company was a large or high-profile leader in its sector.
+
+That gives 29 comparable cases, 12 of which no longer trade (Enron, WorldCom, Lucent, Nortel, Merrill, Bear Stearns, WaMu, Wirecard, Nikola, Lordstown, Twitter, Bed Bath & Beyond). Abnormal returns are versus the index with beta = 1, measured from day 1.
+
+| Group | n | Median abnormal return 1m / 3m / 6m | P(raw 6m ≤ −50%) | Equity eventually wiped out |
+|---|---|---|---|---|
+| **All comparable, including failures** | 29 | −8% / −17% / **−23%** | **38%** | **28%** |
+| Survivors only (the biased view) | 17 | −7% / −13% / −14% | 18% | 0% |
+| S1 leadership transition, business intact | 13 | −8% / −10% / −14% | 31% | 8% |
+| S2 legal/regulatory crisis, real business (VW, Boeing, UNH, Tyco, Valeant) | 5 | −7% / −22% / −9% | 0% | 0% |
+| S3 solvency failure / fraudulent business (Enron, WorldCom, Wirecard, Nikola, 2008 banks…) | 11 | −15% / −75% / −88% | 64% | 73% |
+| *Not* comparable: stock near its high at exit | 15 | −3% / −2% / −6% | 0% | 0% |
+
+Two things stand out. First, dropping the failures **understates the 6-month damage by about 9 points and halves the crash probability**. Second, the *cause* of the exit dominates the outcome. CEO exits from stocks that were already falling did much worse than exits near a high, which is the NVDA situation.
+
+**Which scenario is NVDA?** Reporting since 8 Nov ties Huang's exit to affairs *and* to a relationship with an alleged Chinese intelligence operative linked to Megaspeed, an Nvidia customer accused of channelling restricted chips to China. The board hired Wachtell Lipton, Nvidia is reviewing its export-control compliance, and Congress is probing ([CNBC](https://www.cnbc.com/2026/11/08/nvidia-jensen-huang-investigation-china-spy.html), [Al Jazeera](https://www.aljazeera.com/news/2026/11/12/why-did-nvidia-ceo-jensen-huang-resign-and-who-is-colette-kress), [Wikipedia](https://en.wikipedia.org/wiki/Jensen_Huang_spying_scandal)). Huang denies compromising national security, and no proof has been presented. That makes S2 a live possibility. S3, solvency failure or a fake business, is implausible for a company with Nvidia's cash flow, but it is kept as a small tail weight for unknown unknowns.
+
 **b) NVDA's own fast drops of 30%** (8 prior episodes). The 6-month outcomes ranged from −75% (2002) to +128% (2020): 4 were up and 4 were down. The 2018 and 2022 episodes, which were also post-boom cool-downs, went down another 10–20%. See `output/nvda_drawdown_analogs.png`.
 
-**c) Mega-cap tech stocks falling 25% or more from a 52-week high within 30 trading days** (88 episodes, 21 stocks, 1996–2026):
+**c) Mega-cap tech stocks falling 25% or more from a 52-week high within 30 trading days** (96 episodes, 22 stocks, 1996–2026; now includes JDS Uniphase via VIAV's history):
 
 | | 1 month | 3 months | 6 months |
 |---|---|---|---|
-| Median forward return | +5.7% | +13.5% | +20.3% |
-| P(up) | 61% | 67% | 61% |
-| 10th / 90th percentile | −18% / +25% | −24% / +53% | −29% / +102% |
+| Median forward return | +5.6% | +12.0% | +20.3% |
+| P(up) | 59% | 66% | 60% |
+| 10th / 90th percentile | −18% / +26% | −25% / +53% | −32% / +102% |
+
+⚠️ This universe is still mostly *today's* survivors. Dot-com giants that later collapsed (Lucent, Nortel, WorldCom, Sun) have no Yahoo data, so these rebound statistics are biased upward. The same bias applies to the backtest universe in section 3.
 
 ## 3. Models and walk-forward backtest
 
@@ -71,6 +95,32 @@ Backtest: 13 mega-cap tech stocks, a forecast every quarter from 2007, scored ou
 
 Individual models at 6 months, by median: state analogs $157, factor model $186, bootstrap $194, GARCH $221. Full table: `output/nvda_forecast_table.csv`.
 
+### Scenario mix, including failed-company analogs (preferred view)
+
+The scenario weights are a judgment call; edit `SCENARIO_WEIGHTS` in `forecast.py`. Defaults are **S1 70%, S2 27%, S3 3%**.
+- **S1** = the backtested ensemble plus 50%-shrunk median S1 drift.
+- **S2 and S3** = NVDA beta (1.39) × a bootstrapped Nasdaq move plus abnormal returns drawn from those cases.
+
+| Date | Median | 5–95% | P(< $130) | P(< $100) | P(≤ −50%) | P(> $239 ATH) |
+|---|---|---|---|---|---|---|
+| 18 Dec 2026 | **$160** | $123–205 | 9% | 1% | 0.6% | 0.6% |
+| 19 Feb 2027 | **$159** | $93–244 | 27% | 7% | 2.8% | 6% |
+| 21 May 2027 | **$168** | $76–304 | 26% | **13%** | **6%** | 16% |
+| *Options-implied, 21 May* | *$159* | *$68–269* | *28%* | *12%* | *7%* | *10%* |
+
+Once the failed-company analogs are included, **the model's downside tail almost exactly matches what the options market prices** (P < $100 by May: 12.6% vs 12.2%). The survivor-only ensemble had it at 4.5%. That independent agreement is the strongest evidence that the earlier view was too rosy.
+
+Sensitivity at 6 months:
+
+| w(S2) | w(S3) | Median | 5th pct | P(< $100) | P(≤ −50%) |
+|---|---|---|---|---|---|
+| 10% | 0% | $175 | $91 | 8% | 3% |
+| 10% | 3% | $173 | $82 | 10% | 5% |
+| **27%** | **3%** | **$168** | **$77** | **13%** | **6%** |
+| 27% | 10% | $164 | $22 | 17% | 11% |
+| 50% | 3% | $165 | $72 | 15% | 8% |
+| 50% | 10% | $160 | $23 | 20% | 12% |
+
 **How to read the gap between the ensemble and options.** The two agree on the next month. They diverge later almost entirely because of *drift*:
 - Options are risk-neutral, so they carry no equity risk premium; their median sits below spot because of volatility drag.
 - The bootstrap and GARCH models carry NVDA's extraordinary 5–10-year average return forward.
@@ -84,6 +134,8 @@ The backtest favours the ensemble overall, but it also shows that history-based 
 
 - **There is no clean precedent** for a scandal-driven exit by the founder-CEO of a ~$4T company in the middle of an AI-capex scare. The event set mixes very different situations: founder retirements, scandals and firings.
 - **Unmodelled jumps:** the naming of a permanent CEO (Haas would likely be read positively), Huang's congressional testimony and any further revelations, hyperscaler capex guidance, and export controls.
+- **Survivorship:** the comparable-exit set includes 12 delisted or failed companies, hand-compiled from news reports. Interim prices for some of them are low-confidence (flagged per row), and betas are set to 1. The drawdown-analog universe and the backtest universe still contain only companies Yahoo carries, i.e. survivors.
+- **Small samples:** S2 has only 5 cases, so its distribution is coarse. The scenario weights are judgment, not estimates.
 - The CEO event dates were entered by hand, then verified against the day-0 price reactions. The options snapshot is from the 13 Nov close, and the 4% risk-free rate is an assumption.
 
 ## Reproduce
@@ -92,6 +144,7 @@ The backtest favours the ensemble overall, but it also shows that history-based 
 pip install yfinance arch numpy pandas scipy matplotlib
 python fetch_data.py    # needs Yahoo Finance hosts allowed
 python event_study.py
+python comparable_events.py
 python backtest.py      # ~1-2 min on 4 cores
 python forecast.py
 ```

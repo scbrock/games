@@ -15,7 +15,8 @@ DATA = HERE / "data"
 UNIVERSE = ["NVDA", "AAPL", "MSFT", "AMZN", "GOOGL", "META", "CSCO", "INTC", "ORCL", "AMD",
             "AVGO", "TSM", "QCOM", "TSLA", "IBM", "TXN", "ADBE", "NFLX", "MU", "ASML", "CRM"]
 # CEO-event tickers not already in the universe
-EVENT_EXTRA = ["HPQ", "MCD", "BA", "WYNN", "DIS", "SBUX", "NKE", "KSS", "UNH", "GE"]
+EVENT_EXTRA = ["HPQ", "MCD", "BA", "WYNN", "DIS", "SBUX", "NKE", "KSS", "UNH", "GE",
+               "VIAV"]  # VIAV carries JDS Uniphase (dot-com casualty) history
 INDEX = ["^IXIC", "^VIX", "^GSPC"]
 EARNINGS_FOR = ["NVDA", "AAPL", "MSFT", "AMZN", "GOOGL", "META", "AMD", "AVGO", "INTC", "CSCO", "ORCL", "QCOM", "MU"]
 

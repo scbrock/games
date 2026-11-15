@@ -1,0 +1,23 @@
+company,yahoo,day0,category,survived,long_run_outcome,base_px,px_1m,px_3m,px_6m,dd_at_exit,index,quality,source
+Enron,,2001-08-15,company_crisis,0,Chapter 11 Dec 2001; equity wiped out,37.0,28.0,9.0,0.30,-0.54,^GSPC,approx: base & 3m/6m from reports; 1m low confidence,https://money.cnn.com/2001/08/14/companies/enron/ ; https://www.britannica.com/event/Enron-scandal/Downfall-and-bankruptcy
+WorldCom,,2002-04-30,company_crisis,0,Chapter 11 Jul 2002; equity wiped out,2.48,1.60,0.10,0.12,-0.85,^GSPC,approx: base reported; 1m low confidence; post-bankruptcy pennies,https://www.washingtontimes.com/news/2002/may/1/20020501-023928-8412r/ ; https://www.foxnews.com/story/worldcom-timeline.amp
+Tyco,,2002-06-03,company_crisis,1,Survived; fraud convictions; recovered by 2004,16.5,13.0,15.5,17.5,-0.72,^GSPC,approx: base reported; later points low confidence,https://www.upi.com/Business_News/2002/06/03/Shares-tank-on-corporate-governance-fears/50601023138942/
+Lucent,,2000-10-23,performance,0,Survived to 2006 merger far below exit price; never recovered,22.06,15.0,16.0,9.5,-0.68,^IXIC,approx: base reported; 6m implied by -57% by late May 2001,https://money.cnn.com/2000/10/23/technology/lucent/index.htm ; https://www.taipeitimes.com/News/worldbiz/archives/2001/05/30/0000087984
+Nortel,,2004-04-28,company_crisis,0,Chapter 11 Jan 2009,4.14,3.53,3.90,3.30,-0.55,^IXIC,approx: base/1m reported; 3m/6m low confidence,https://www.nbcnews.com/news/amp/wbna4852820 ; https://www.lightreading.com/dunns-done-with-nortel/d/d-id/602805
+Merrill Lynch,,2007-10-30,company_crisis,0,Sold to BofA Sep 2008 at ~$29,66.0,59.0,57.0,50.0,-0.33,^GSPC,approx: from recollection; low confidence,recollection of public price history
+Bear Stearns,,2008-01-08,company_crisis,0,Rescued by JPMorgan Mar 2008 at $10/share,72.0,83.0,10.5,7.5,-0.53,^GSPC,approx: base inferred from -54% 1y decline; 3m/6m from $10 deal terms,https://money.cnn.com/2008/01/08/news/companies/stearns_cayne.fortune/index.htm ; https://www.history.com/this-day-in-history/March-16/bear-stearns-sold-to-j-p-morgan-chase
+Washington Mutual,,2008-09-08,company_crisis,0,Seized by FDIC 25 Sep 2008; equity wiped out,4.0,0.10,0.05,0.05,-0.89,^GSPC,approx: base low confidence; outcome certain,https://www.mprnews.org/story/2008/09/25/wamu ; https://gazette.com/2008/09/26/wamu-becomes-biggest-bank-to-fail-in-u-s-history/
+Wirecard,,2020-06-19,company_crisis,0,Insolvency 25 Jun 2020; equity wiped out,25.0,2.0,0.9,0.5,-0.85,^GDAXI,approx: base/1m from reports; outcome certain,https://www.aljazeera.com/amp/economy/2020/6/19/wirecard-ceo-quits-as-fintech-firm-searches-for-missing-2-1bn ; https://ig.com/uk/news-and-trade-ideas/how-wirecard-erased-nearly-all-of-its-market-cap-in-one-week-200626
+Nikola,,2020-09-21,company_crisis,0,Founder convicted of fraud 2022; Chapter 11 Feb 2025,27.58,21.0,16.5,15.0,-0.65,^IXIC,approx: base reported; later points low confidence,https://www.cnbc.com/2020/09/21/nikola-shares-open-at-lowest-price-since-ipo-after-company-founder-trevor-milton-resigns.html
+Lordstown Motors,,2021-06-14,company_crisis,0,Chapter 11 Jun 2023,9.26,8.4,6.0,3.6,-0.68,^IXIC,approx: base reported; later points low confidence,https://www.pressreader.com/usa/the-columbus-dispatch/20210615/281685437794595
+Twitter,,2021-11-29,founder,0,Acquired Oct 2022 at $54.20 (above exit price),46.2,43.5,35.7,39.5,-0.42,^IXIC,approx: from recollection; low confidence,recollection of public price history
+Bed Bath & Beyond,,2022-06-29,performance,0,Chapter 11 Apr 2023,5.0,5.2,6.1,2.0,-0.80,^GSPC,approx: from recollection; low confidence,recollection of public price history
+HP (Fiorina),HPQ,2005-02-09,performance,1,,,,,,,^GSPC,yahoo,
+Citigroup (Prince),C,2007-11-05,company_crisis,1,Survived with federal bailout; -90% by 2009,,,,,,^GSPC,yahoo,
+AIG (Sullivan),AIG,2008-06-16,company_crisis,1,Survived with federal bailout; -95% by 2009,,,,,,^GSPC,yahoo,
+BlackBerry (founders),BB,2012-01-23,founder,1,Survived as small software company,,,,,,^IXIC,yahoo,
+Groupon (Mason),GRPN,2013-03-01,founder,1,,,,,,,^IXIC,yahoo,
+Volkswagen (Winterkorn),VWAGY,2015-09-23,company_crisis,1,,,,,,,^GSPC,yahoo,
+Valeant (Pearson),BHC,2016-03-21,company_crisis,1,,,,,,,^GSPC,yahoo,
+Wells Fargo (Stumpf),WFC,2016-10-13,company_crisis,1,,,,,,,^GSPC,yahoo,
+Peloton (Foley),PTON,2022-02-08,founder,1,,,,,,,^IXIC,yahoo,

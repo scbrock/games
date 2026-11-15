@@ -1,0 +1,12 @@
+group,n,mean_ab_1m_%,median_ab_1m_%,mean_ab_3m_%,median_ab_3m_%,mean_ab_6m_%,median_ab_6m_%,P(raw 6m <= -50%),P(equity eventually wiped out/bankrupt)
+ALL comparable (incl. failures),29,-14.6,-7.9,-27.1,-16.9,-32.2,-22.6,0.38,0.28
+"comparable, survivors only (= the survivor-biased view)",17,-7.0,-6.9,-14.5,-13.1,-13.1,-14.0,0.18,0.0
+"comparable, failed/delisted only",12,-25.3,-13.4,-45.0,-44.6,-59.2,-62.3,0.67,0.67
+"comparable, company_crisis",16,-19.9,-10.8,-45.1,-38.3,-50.9,-54.3,0.44,0.44
+"comparable, founder",5,-11.7,-7.5,-15.7,-13.1,-9.2,-3.9,0.4,0.0
+"comparable, performance",7,-7.3,-8.6,-4.0,-5.6,-21.3,-19.4,0.29,0.14
+"comparable, personal_conduct",1,5.6,5.6,40.8,40.8,77.6,77.6,0.0,0.0
+"comparable, S1 leadership transition, business intact",13,-8.0,-7.5,-5.1,-9.9,-9.1,-14.0,0.31,0.08
+"comparable, S2 legal/regulatory crisis, real business",5,-4.8,-6.7,-15.6,-21.7,-13.1,-8.7,0.0,0.0
+"comparable, S3 solvency failure / fraudulent business",11,-26.8,-14.5,-58.4,-75.1,-68.1,-88.4,0.64,0.64
+NOT comparable (stock near its high at exit),15,-2.5,-2.5,-2.7,-1.8,-4.2,-5.8,0.0,0.0
