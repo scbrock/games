@@ -12,7 +12,7 @@ This is a research exercise, not investment advice.*
 | Float | ~6.3% of basic shares: very low | derived |
 | Demand | Book covered across the range; reportedly ~6x oversubscribed; banks weighing a price above $78 | [CNBC](https://www.cnbc.com/2026/11/10/anthropic-sets-price-range-of-70-to-78-in-upcoming-ipo.html), [Vantage](https://www.vantagemarkets.com/en/market-analysis/anthropic-ipo-what-to-know/) (relaying Bloomberg/FT) |
 | Fundamentals | H1-26 revenue ~$16.3bn (vs $1.16bn H1-25); run-rate $47bn (May, company) / ~$65bn (Jul, reported); last private mark $965bn (May) | [FourWeekMBA](https://fourweekmba.com/ai-anthropics-s-1-shows-16-3b-half-year-revenue-up-14x/), [Yahoo](https://finance.yahoo.com/markets/article/anthropic-more-valuable-than-openai-in-latest-funding-round-184115376.html) |
-| Market | Nasdaq hit correction territory; −5.5% on Nov 5 with VIX +70% to 28; VIX back to ~19.5 by Nov 10; S&P +2.5% w/e Nov 13 but tech weak Fri (Nvidia CEO exit); Nvidia earnings Nov 17 | [Cboe](https://www.cboe.com/insights/posts/week-of-11-9-2026-no-contagion-yet-equity-vol-spikes-macro-vol-fades), [WaPo/AP](https://www.washingtonpost.com/business/2026/11/13/wall-street-stocks-dow-nasdaq/f15a10e2-dfa7-11f1-912c-4fbb80d73f7f_story.html) |
+| Market | Yahoo, Nov 13: VIX 19.3, Nasdaq −5.9% over 21 days and −8.9% from its 52-week high. Nasdaq hit correction territory; −5.5% on Nov 5 with VIX +70% to 28; VIX back to ~19.5 by Nov 10; S&P +2.5% w/e Nov 13 but tech weak Fri (Nvidia CEO exit); Nvidia earnings Nov 17 | [Cboe](https://www.cboe.com/insights/posts/week-of-11-9-2026-no-contagion-yet-equity-vol-spikes-macro-vol-fades), [WaPo/AP](https://www.washingtonpost.com/business/2026/11/13/wall-street-stocks-dow-nasdaq/f15a10e2-dfa7-11f1-912c-4fbb80d73f7f_story.html) |
 | Recent comps | SpaceX (Jun-26): $135 fixed price, $75bn, ~3–4x covered, +19% day 1, roughly back at offer by Nov. Cerebras (May-26): priced $60 above range, +68% day 1. 40 largest US IPOs since 2025: median +17.8% day 1, **−12.5%** median from offer to Oct-26 | [NPR](https://www.npr.org/2026/06/12/nx-s1-5855004/stock-ai-spacex-ipo-elon-musk), [MAS Economics](https://maseconomics.com/ai-ipo-wave/), [Renaissance](https://www.renaissancecapital.com/IPO-Center/Winners-Losers/1427) |
 | Prediction market | Polymarket P(day-1 close ≥ $1.5T) fell to ~34% on Nov 15 | [FourWeekMBA](https://fourweekmba.com/ai-anthropic-ipo-polymarket-odds-of-a-1-5t-debut-fall-to-34/) |
 | Academic base rates | US 1980–2025: mean day-1 +19%, median +7% (Ritter). Very high P/S IPOs pop more but lag over 3 years. Ritter has warned about the valuation | [Ritter](https://site.warrington.ufl.edu/ritter/files/IPO-Statistics.pdf), [TheStreet](https://www.thestreet.com/investing/anthropic-ipo-valuation-risk-1-trillion-ceiling-jay-ritter) |
@@ -41,61 +41,61 @@ The first-day models were tested two ways: leave-one-out, and walk-forward (each
 
 | Model | LOO MAE (pts) | LOO CRPS | LOO cover80 | WF MAE | WF CRPS | WF cover80 | WF rank corr |
 |---|---|---|---|---|---|---|---|
-| Base rate | 35.8 | 0.171 | 0.78 | 38.9 | 0.183 | 0.73 | −0.39 |
-| Reference class ≥$3bn | 35.6 | 0.172 | 0.78 | 38.3 | 0.187 | 0.70 | 0.05 |
-| Partial adjustment | 28.8 | 0.144 | 0.78 | 31.8 | 0.147 | **0.83** | **0.65** |
-| OLS full | 30.7 | 0.151 | 0.73 | 33.2 | 0.155 | 0.77 | 0.51 |
-| Ridge full | 31.4 | 0.147 | 0.73 | 34.0 | 0.161 | 0.70 | 0.49 |
-| k-NN analogs | **28.4** | **0.134** | 0.84 | **30.9** | **0.140** | 0.73 | 0.64 |
-| Ensemble | 29.5 | 0.138 | **0.87** | 32.7 | 0.153 | 0.77 | 0.59 |
+| Base rate | 35.9 | 0.172 | 0.78 | 39.1 | 0.184 | 0.73 | −0.40 |
+| Reference class ≥$3bn | 35.7 | 0.173 | 0.78 | 38.5 | 0.187 | 0.70 | 0.05 |
+| Partial adjustment | **28.9** | 0.144 | 0.78 | 32.0 | 0.148 | **0.83** | **0.66** |
+| OLS full | 30.8 | 0.150 | 0.76 | 35.0 | 0.158 | 0.80 | 0.47 |
+| Ridge full | 29.7 | 0.145 | 0.76 | 33.5 | 0.161 | 0.70 | 0.49 |
+| k-NN analogs | 29.8 | **0.137** | 0.82 | **30.8** | **0.137** | 0.80 | 0.63 |
+| Ensemble | 29.5 | **0.137** | **0.89** | 32.1 | 0.150 | 0.80 | 0.65 |
 
 Takeaways:
 - **Price revision is the signal.** Its coefficient is ~0.74–0.83 (z≈4–4.7). Once revision is known, VIX, size and float are insignificant; the Nasdaq 1-month return is borderline (+1.6 pts of day-1 return per 1% of Nasdaq gain, p≈0.06).
 - **Errors are large even for the best models**, about ±30 pts MAE, because day-1 returns are heavy-tailed (Figma +250%, Snowflake +112%). Treat point forecasts with caution and rely on the distributions.
 
-**One-year path calibration** used 33 deals with an approximate 1-year return from the day-1 close; the historical median was −21%.
+**One-year path calibration** used 42 deals with a 1-year return from the day-1 close (37 from Yahoo Finance; 5 delisted names hand-entered). The historical median was −8%.
 
 | Path model | cover80 (all) | cover80 (≥$5bn deals) | mean PIT (0.5 = unbiased) | CRPS |
 |---|---|---|---|---|
-| GBM vol 40% | 0.55 | 0.83 | 0.45 | 0.500 |
-| GBM vol 80% | 0.73 | 1.00 | 0.55 | 0.465 |
-| Regime+jumps, idio 45%, drift −6% | 0.58 | 0.83 | 0.51 | 0.468 |
-| **Regime+jumps, idio 50%, drift −10% (used)** | 0.67 | 1.00 | 0.53 | **0.464** |
-| Regime+jumps, idio 70%, drift −10% | 0.73 | 1.00 | 0.57 | 0.473 |
+| GBM vol 40% | 0.48 | 0.83 | 0.49 | 0.508 |
+| GBM vol 80% | 0.71 | 1.00 | 0.57 | 0.481 |
+| Regime+jumps, idio 45%, drift −6% | 0.57 | 0.83 | 0.53 | **0.480** |
+| **Regime+jumps, idio 50%, drift −10% (used)** | 0.62 | 0.83 | 0.56 | 0.481 |
+| Regime+jumps, idio 70%, drift −10% | 0.76 | 1.00 | 0.59 | 0.489 |
 
-All the path models under-cover the tails of the broad sample, which is mostly smaller, more volatile names. On the 6 mega deals, mean PIT is ~0.4: their first years were *worse* than the model expected. Visa −3%, GM −39%, Facebook −32%, Alibaba −36%, Uber −25%, Rivian −65%.
+The top three models are effectively tied on CRPS. All of them under-cover the tails of the broad sample, which is mostly smaller, more volatile names; the 70% idio-vol variant gets coverage closest to 80% at a small CRPS cost. On the 6 mega deals, mean PIT is ~0.4: their first years were *worse* than the model expected. Visa −3%, GM −39%, Facebook −32%, Alibaba −36%, Uber −25%, Rivian −65%.
 
 ## 4. Results for Anthropic (base case)
 
 | Outcome | Median | 25–75% | 5–95% |
 |---|---|---|---|
 | Final offer price | **$80.0** | $77–83 | $73–88 |
-| Day-1 return | **+21%** | +1% to +41% | −13% to +112% |
-| Day-1 close | **$97** | $81–114 | $67–165 |
-| Day-1 market cap (basic / FD) | $1.27T / $1.80T | $1.06–1.49T / $1.51–2.12T | |
-| Price at lock-up expiry (~day 124) | $86 | $61–122 | $37–204 |
-| Price at 1 year | **$75** | $47–120 | $24–237 |
+| Day-1 return | **+19%** | +1% to +39% | −15% to +109% |
+| Day-1 close | **$95** | $80–113 | $66–165 |
+| Day-1 market cap (basic / FD) | $1.25T / $1.78T | $1.05–1.47T / $1.49–2.10T | |
+| Price at lock-up expiry (~day 124) | $85 | $60–121 | $37–204 |
+| Price at 1 year | **$74** | $47–119 | $24–234 |
 
 - P(priced **above** $78) **68%**; within the range 32%; below $70 ~1%.
-- P(breaks issue on day 1) **21%**; P(pop > 25%) 45%; P(pop > 50%) 18%.
-- P(below offer at lock-up expiry) 45%; **P(below offer after 1 year) 54%**.
-- **Polymarket check:** the model gives P(day-1 close ≥ $1.5T) of **24% on basic shares** and 76% fully diluted. Polymarket's 34% fits the basic-share count, which puts the model slightly more cautious than the crowd.
+- P(breaks issue on day 1) **23%**; P(pop > 25%) 43%; P(pop > 50%) 17%.
+- P(below offer at lock-up expiry) 46%; **P(below offer after 1 year) 54%**.
+- **Polymarket check:** the model gives P(day-1 close ≥ $1.5T) of **23% on basic shares** and 74% fully diluted. Polymarket's 34% fits the basic-share count, which puts the model slightly more cautious than the crowd.
 
-**Model disagreement is the main uncertainty.** Base-rate approaches give a +29–31% median. Approaches that condition on market and deal structure give +10–15% with ~30% break risk, because this deal is huge, the market just corrected, and the Nasdaq trend is negative.
+**Model disagreement is the main uncertainty.** Base-rate approaches give a +29–31% median. Approaches that condition on market and deal structure give +9–15% with 24–38% break risk, because this deal is huge, the market just corrected, and the Nasdaq trend is negative.
 
 **Sensitivity of the median day-1 return** (fixed offer price × market state):
 
 | Offer | Calm (VIX 14, NDX +4%) | Base (VIX 20, NDX −5%) | Stress (VIX 30, NDX −12%) |
 |---|---|---|---|
-| $70 | +21% | +9% | +4% |
-| $78 | +25% | +18% | +11% |
-| $86 | +29% | +21% | +19% |
+| $70 | +20% | +10% | +3% |
+| $78 | +26% | +17% | +8% |
+| $86 | +32% | +20% | +13% |
 
 Counterintuitively, pricing *above* the range raises the expected pop. Historically, upward revisions signal excess demand that bankers only partially pass through.
 
 ## 5. Caveats (read these)
 
-- **The historical data is hand-compiled.** This sandbox can only reach package registries, so price data could not be downloaded. Offer prices, ranges and day-1 closes are well documented. VIX, Nasdaq 1-month and float values are approximate, and 1-year returns are rounded from memory of public price history. Verify them before relying on the numbers (`data/historical_ipos.csv`).
+- **Data provenance.** `fetch_market_data.py` pulls VIX at pricing, the Nasdaq Composite 21-day return, 1-year returns and a check of day-1 closes from Yahoo Finance via yfinance. Day-1 closes matched Yahoo after split adjustment for all but Affirm and Klarna, which were corrected. Still hand-entered: offer prices and ranges, deal size, float %, and Netscape, LinkedIn, Zynga, Twitter and Didi (delisted) market fields. The original hand-entered file is kept as `data/historical_ipos_manual.csv`; it was off by ~0.9 VIX pts, ~2 Nasdaq pts and ~5 pts on 1-year returns on average.
 - **Selection bias.** The sample is *notable* IPOs, which skews toward famous successes. Ritter's full-sample median pop is +7%, versus ~+30% here, so the base-rate models likely overstate the pop.
 - **Extrapolation.** Only SpaceX ($75bn) is comparable in size, and nothing is comparable in valuation-to-revenue growth. Treat Anthropic-specific factors as unmodelled: AI-capex sentiment, the Nvidia print, Long-Term Benefit Trust governance, and index-inclusion flows.
 - The pricing-stage assumptions (median ~$80) rest on press reports of book strength. Change `ASSUMPTIONS` in `simulate.py` and re-run.
@@ -104,6 +104,8 @@ Counterintuitively, pricing *above* the range raises the expected pop. Historica
 
 ```bash
 pip install numpy pandas scipy statsmodels scikit-learn matplotlib
+pip install yfinance
+python fetch_market_data.py   # needs Yahoo Finance hosts allowed
 python backtest.py   # writes output/backtest.json (ensemble weights)
 python simulate.py   # writes output/simulation_summary.json, sensitivity.csv, per_model.csv, chart
 ```

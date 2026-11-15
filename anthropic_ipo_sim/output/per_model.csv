@@ -1,7 +1,7 @@
 model,median_day1_%,p10_%,p90_%,P(break)
 Base rate (all IPOs),31.4,0.0,109.4,0.09
 Reference class (deals >= $3bn),29.1,0.6,111.6,0.07
-Partial adjustment (revision only),25.6,-1.2,74.2,0.11
-OLS (revision + market + structure),10.3,-15.2,55.9,0.35
-Ridge (revision + market + structure),14.9,-13.0,53.1,0.31
-k-NN historical analogs,13.6,-9.4,43.5,0.28
+Partial adjustment (revision only),25.7,-1.5,74.1,0.12
+OLS (revision + market + structure),9.0,-17.7,49.7,0.38
+Ridge (revision + market + structure),13.1,-14.4,51.2,0.33
+k-NN historical analogs,14.7,-8.5,42.7,0.24
